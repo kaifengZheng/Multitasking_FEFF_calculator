@@ -1,0 +1,6 @@
+pymatgen
+numpy
+scipy
+toml
+tomli
+
