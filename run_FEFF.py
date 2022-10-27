@@ -25,18 +25,12 @@ parser.add_argument('-r','--run_file',action='store_true',help='run FEFF calcula
 args=parser.parse_args()
 config=toml.load("config.toml")
 template_dir = config['template_dir']
-pos_filename = config['pos_filename']
 scratch = config['scratch']
 CA = config['CA']
 radius = config['radius']
-if len(config['site'])==1:
-    site = config['site'][0]
-else:
-    site = config['site']
 mode = config['mode']
 cores = int(config['cores'])
 tasks = int(config['tasks'])
-average = config['average']
 file_type = config['file_type']
 symmetry= config['symmetry']
 #site_rule = config['site_rule']
@@ -306,6 +300,9 @@ def main():
         else:
            shutil.rmtree("FEFF_inp")
            os.mkdir("FEFF_inp")
+        with open('site.txt') as file1:
+            sitelist=file1.readlines()
+        print(sitelist)
 
         for i in tqdm(range(len(readfiles))):
             if symmetry:
@@ -315,8 +312,19 @@ def main():
                     #FEFF_obj[i].FEFFinp_gen(unique_index[j],numbers)
             else:
                 ################################################
-                site=int(readfiles[i].split('.')[0].split('site_')[1])
-                FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
+                try:
+                    site=int(readfiles[i].split('.')[0].split('site_')[1])
+                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
+                except:
+                    sites_str=sitelist[i].split()
+                    num_site=len(sites_str)
+                    #print(num_site)
+                   # if num_site==1:
+                    #    sites_str=[sites_str]
+                    for j in range(num_site):
+                        #print(f"i={i}")
+                        #print(sites_str[j])
+                        FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=int(sites_str[j]),numbers=0))
                 #exec(site_rule) #different site rule
                 # #FEFF_obj.FEFFinp_gen(site)
                 # ############################################### 
@@ -342,9 +350,11 @@ def main():
                 #print(numbers)
                 FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
             else:
-                site=int(readfiles[i].split('.')[0].split('site_')[1])
-                #print(numbers)
-                FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
+                    site=int(readfiles[i].split('.')[0].split('site_')[1])
+                
+                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
+        
+
         if mode=='seq_multi':
             start_time = time.time() 
             with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
