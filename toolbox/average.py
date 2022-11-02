@@ -5,35 +5,63 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import argparse
+import concurrent.futures as confu
+from concurrent import futures
 from tqdm import tqdm
-filename=glob.glob("../output/*.json")
-output=dict()
-#interpolation
-Energy=[]
-print("reading data...\n")
-for i in tqdm(range(len(filename))):
+
+
+parser=argparse.ArgumentParser(description="calculate average spectrum,defualt is using 1 core")
+parser.add_argument('-n','--cores',type=int,default=1,help='the number of works')
+
+args = parser.parse_args()
+ncores=args.cores
+
+
+def load_files(filename,i):
+    particle=filename[i].split('/')[2].split("_site")[0]
     with open(filename[i]) as f:
-        particle=filename[i].split('/')[2].split("_site")[0]
-        data = json.load(f)
-        Energy.append(data['omega'])
-        if particle not in output.keys():
-            output[particle]=[{'E':np.array(data['omega'],dtype=float),
-            'mu':np.array(data['mu'],dtype=float),
-            'site':int(filename[i].split("_site_")[1].split('_')[0]),
-            'n_sites':int(filename[i].split('n_')[1].split('.')[0])}]
-            #print(particle)
-        else:
-            output[particle].append({'E':np.array(data['omega'],dtype=float),
-            'mu':np.array(data['mu'],dtype=float),
-            'site':int(filename[i].split("_site_")[1].split('_')[0]),
-            'n_sites':int(filename[i].split('n_')[1].split('.')[0])})
+      data = json.load(f)
+      Energy=np.array(data['omega'],dtype=float)
+      mu=np.array(data['mu'],dtype=float)
+      site=int(filename[i].split("_site_")[1].split('_')[0])
+      n_sites=int(filename[i].split('n_')[1].split('.')[0])
+    return particle,Energy,mu,site,n_sites
+
+
+
+
+print("reading data...\n")
+output=dict()
+Energy=[]
+filename=glob.glob("../output/*.json")
+with tqdm(total=len(filename)) as pbar:
+    with confu.ThreadPoolExecutor(max_workers=ncores) as executor:
+        jobs=[executor.submit(load_files,filename,i) for i in range(len(filename))]
+        for job in futures.as_completed(jobs):
+            Energy.append(job.result()[1])
+            if job.result()[0] not in output.keys():
+                output[job.result()[0]]=[{'E':job.result()[1],
+                        'mu':job.result()[2],
+                        'site':job.result()[3],
+                        'n_sites':job.result()[4]}]
+                #print(particle)
+            else:
+                output[job.result()[0]].append({'E':job.result()[1],
+                        'mu':job.result()[2],
+                        'site':job.result()[3],
+                        'n_sites':job.result()[4]})
+            pbar.update(1)
+
+
+
 keys=list(output.keys())
 print(keys)
 print("\nremeshing energy grids.../n")
 energy=np.array(Energy,dtype=float)
 minE,maxE=np.max(energy[:,0]),np.min(energy[:,-1])
 grids=np.linspace(minE,maxE,1000)
-for key in output.keys():
+for key in tqdm(output.keys()):
     for i in range(len(output[key])):
         output[key][i]['mu']=interp1d(output[key][i]['E'],output[key][i]['mu'])(grids)
         output[key][i]['E']=grids

@@ -302,7 +302,6 @@ def main():
            os.mkdir("FEFF_inp")
         with open('site.txt') as file1:
             sitelist=file1.readlines()
-        print(sitelist)
 
         for i in tqdm(range(len(readfiles))):
             if symmetry:
