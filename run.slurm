@@ -4,12 +4,12 @@
 #SBATCH --partition=extended-40core
 #SBATCH --output=array_test.%N_%a.log
 #SBATCH --job-name=kaif
-#SBATCH --mail-user=
+#SBATCH --mail-user=kaifeng.zheng@stonybrook.edu
 #SBATCH --mail-type=ALL
 
 module load slurm
 module load  python39
-module use module
+module use /gpfs/projects/FrenkelGroup/shimogawa/modulefiles/FEFF
 module load 10.0.0
 
 #module load intel/oneAPI/2021.4

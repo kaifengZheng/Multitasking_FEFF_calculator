@@ -1,11 +1,15 @@
 template_dir = "template.inp"
-scratch = "/scr/kzheng/FEFF" #scratch folder location
-CA = "Ni" #element of absorber
-radius = 14   #The spherical region(according to the absorbing atom) to be consider the size of the particle
-mode = "seq_multi" #four modes are available: seq_seq seq_multi mpi_multi mpi_seq
-cores = 1 #  number of cpus for one task
-tasks = 5 # number of tasks running in parallel.  
-file_type="*.xyz" #The type of input file: it can also be *.cif *.vasp and *.poscar
-symmetry=false #if this is true, the inequivalent site will be calculated using pymatgen point group
-              #if it is not true, then you need write your own site determination rules.
-              # For example: site_rule="site=int(readfiles[i].split('.')[0].split('site_')[1])"
+#scratch = "/gpfs/scratch/kaifzheng/FEFF"
+scratch = "/gpfs/scratch/kaifzheng/FEFF"
+CA = "Pt"
+radius = 14
+mode = "seq_multi"
+cores = 1
+tasks = 40
+site = [0]
+pos_filename = ""
+average = true
+file_type="*.xyz"
+symmetry=true
+restart=true
+#site_rule="site=int(readfiles[i].split('.')[0].split('site_')[1])"

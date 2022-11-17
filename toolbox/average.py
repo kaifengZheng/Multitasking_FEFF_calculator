@@ -22,10 +22,10 @@ def load_files(filename,i):
     particle=filename[i].split('/')[2].split("_site")[0]
     with open(filename[i]) as f:
       data = json.load(f)
-      Energy=np.array(data['omega'],dtype=float)
-      mu=np.array(data['mu'],dtype=float)
-      site=int(filename[i].split("_site_")[1].split('_')[0])
-      n_sites=int(filename[i].split('n_')[1].split('.')[0])
+    Energy=np.array(data['omega'],dtype=float)
+    mu=np.array(data['mu'],dtype=float)
+    site=int(filename[i].split("_site_")[1].split('_')[0])
+    n_sites=int(filename[i].split('n_')[1].split('.')[0])
     return particle,Energy,mu,site,n_sites
 
 
@@ -56,7 +56,7 @@ with tqdm(total=len(filename)) as pbar:
 
 
 keys=list(output.keys())
-print(keys)
+#print(keys)
 print("\nremeshing energy grids.../n")
 energy=np.array(Energy,dtype=float)
 minE,maxE=np.max(energy[:,0]),np.min(energy[:,-1])

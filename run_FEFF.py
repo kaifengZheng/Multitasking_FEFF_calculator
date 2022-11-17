@@ -25,14 +25,21 @@ parser.add_argument('-r','--run_file',action='store_true',help='run FEFF calcula
 args=parser.parse_args()
 config=toml.load("config.toml")
 template_dir = config['template_dir']
+pos_filename = config['pos_filename']
 scratch = config['scratch']
 CA = config['CA']
 radius = config['radius']
+if len(config['site'])==1:
+    site = config['site'][0]
+else:
+    site = config['site']
 mode = config['mode']
 cores = int(config['cores'])
 tasks = int(config['tasks'])
+average = config['average']
 file_type = config['file_type']
 symmetry= config['symmetry']
+restart=config['restart']
 #site_rule = config['site_rule']
 
 ######################HELP FUNCTIONS######################
@@ -203,18 +210,7 @@ class FEFF_cal:
 
         run_dir = f"{self.scratch}/{self.title}"
         #subprocess.run(f"echo running FEFF on {self.title}...>> output.log",shell=True)
-        
-        #use this when you run
         #write_outlog(f"running FEFF on {self.title}...")
-        
-
-        #####!!!BELOW IS ONLY FOR TEST##################
-        print(f"runining FEFF on {self.title}...")
-        ###############################################
-
-
-
-
         if os.path.exists(f"{run_dir}"):
             shutil.rmtree(run_dir)
         if not os.path.exists(f"{run_dir}"):
@@ -229,12 +225,7 @@ class FEFF_cal:
             a=subprocess.run([f"cd {run_dir} && feffmpi {cores} >>feff.out","wait"],shell=True) #cd {run_dir} &&pwdfeffmpi {cores}>>feff.out
             #subprocess.run(f"echo {a.args[0]}>>output.log",shell=True)
             #subprocess.run(f"returncode={str(a.returncode[0])}>>output.log",shell=True)
-           
-            #use this when you run
-            # write_outlog(f"{a}")
-            ######!!!!BELOW IS ONLY FOR TEST############
-            print(f"{a}")
-            ############################################
+            write_outlog(f"{a}")
             finish_time = time.time()
         if self.mode=='seq_seq' or self.mode=='seq_multi':
             start_time = time.time()  
@@ -243,14 +234,8 @@ class FEFF_cal:
             a=subprocess.run([f"cd {run_dir} && feff >>feff.out","wait"], shell=True)
             #subprocess.run(f"echo {a.args[0]}>>output.log",shell=True)
             #subprocess.run(f"echo returncode={str(a.returncode[0])}",shell=True)
-            ######!!!BLOW IS ONLY FOR TEST##############
-            print(f"{a}")
-            ###########################################
-            
-            
-            #########use this when you run############
-            #write_outlog(f"{a}")
-            
+            #print(a)
+            write_outlog(f"{a}")
             finish_time = time.time()
         with open(f'{run_dir}/feff.inp') as f:
             feffinp = f.readlines()
@@ -300,8 +285,6 @@ def main():
         else:
            shutil.rmtree("FEFF_inp")
            os.mkdir("FEFF_inp")
-        with open('site.txt') as file1:
-            sitelist=file1.readlines()
 
         for i in tqdm(range(len(readfiles))):
             if symmetry:
@@ -311,31 +294,20 @@ def main():
                     #FEFF_obj[i].FEFFinp_gen(unique_index[j],numbers)
             else:
                 ################################################
-                try:
-                    site=int(readfiles[i].split('.')[0].split('site_')[1])
-                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
-                except:
-                    sites_str=sitelist[i].split()
-                    num_site=len(sites_str)
-                    #print(num_site)
-                   # if num_site==1:
-                    #    sites_str=[sites_str]
-                    for j in range(num_site):
-                        #print(f"i={i}")
-                        #print(sites_str[j])
-                        FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=int(sites_str[j]),numbers=0))
+                site=int(readfiles[i].split('.')[0].split('site_')[1])
+                FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
                 #exec(site_rule) #different site rule
                 # #FEFF_obj.FEFFinp_gen(site)
                 # ############################################### 
         start_time = time.time()
         num_obj=len(FEFF_obj)
-        with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
+        with confu.ThreadPoolExecutor(max_workers=tasks) as executor:
             jobs=list(tqdm(executor.map(run_write,FEFF_obj),total=num_obj))
             finish_time = time.time() 
              
              
              
-    if args.run_file==True:
+    if args.run_file==True and restart==False:
         readfiles=glob.glob(f"FEFF_inp/*.inp")
         if type(readfiles)==str:
             readfiles=[readfiles]
@@ -343,20 +315,13 @@ def main():
         
 
         for i in tqdm(range(len(readfiles))):
-            if symmetry==True:
-                site=int(readfiles[i].split('.')[0].split('site_')[1].split('_n')[0])
-                numbers=int(readfiles[i].split('.')[0].split('n_')[1])
-                #print(numbers)
-                FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
-            else:
-                    site=int(readfiles[i].split('.')[0].split('site_')[1])
-                
-                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
-        
-
+            site=int(readfiles[i].split('.')[0].split('site_')[1].split('_n')[0])
+            numbers=int(readfiles[i].split('.')[0].split('n_')[1])
+            #print(numbers)
+            FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
         if mode=='seq_multi':
             start_time = time.time() 
-            with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
+            with confu.ThreadPoolExecutor(max_workers=tasks) as executor:
                 #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
                 #for job in jobs:
                 #    print(job)
@@ -365,24 +330,24 @@ def main():
                 for job in futures.as_completed(jobs):
                     write_files(job.result()[1],job.result()[0])
             finish_time = time.time()
-            write_outlog(f"End in {(finish_time-start_time)/60} min")
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='seq_seq':
             start_time = time.time() 
             for i in range(len(readfiles)):
                 js,inp_file=FEFF_obj[i].particle_run()
                 write_files(js,inp_file)
             finish_time = time.time()
-            write_outlog(f"End in {(finish_time-start_time)/60} min")
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='mpi_seq':
             start_time = time.time() 
             for i in range(len(readfiles)):
                 js,inp_file=FEFF_obj[i].particle_run()
                 write_files(js,inp_file)
             finish_time = time.time()
-            write_outlog(f"End in {(finish_time-start_time)/60} min")
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='mpi_multi':
             start_time = time.time() 
-            with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
+            with confu.ThreadPoolExecutor(max_workers=tasks) as executor:
                 #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
                 #for job in jobs:
                 #    write_files(job[1],job[0])
@@ -390,7 +355,71 @@ def main():
                 for job in futures.as_completed(jobs):
                     write_files(job.result()[1],job.result()[0])
             finish_time = time.time()
-            write_outlog(f"End in {(finish_time-start_time)/60} min")
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+
+    if args.run_file==True and restart==True:
+        readfiles=glob.glob(f"FEFF_inp/*.inp")
+        readout=glob.glob(f"output/*.json")
+        out = []
+        input = []
+        for str1 in readout:
+            out.append(str1.split('/')[1].split('.')[0])
+        for i in range(len(readfiles)):
+            if readfiles[i].split('/')[1].split('.')[0] in out:
+                continue
+            else:
+                input.append(readfiles[i])
+
+
+        
+        if type(input)==str:
+            input=[input]
+        FEFF_obj=[]
+        
+
+        for i in tqdm(range(len(input))):
+            site=int(input[i].split('.')[0].split('site_')[1].split('_n')[0])
+            numbers=int(input[i].split('.')[0].split('n_')[1])
+            #print(numbers)
+            FEFF_obj.append(FEFF_cal(template_dir,input[i],scratch,CA,radius,site=site,numbers=numbers))
+        if mode=='seq_multi':
+            start_time = time.time() 
+            with confu.ThreadPoolExecutor(max_workers=tasks) as executor:
+                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                #for job in jobs:
+                #    print(job)
+                #    write_files(job[1],job[0])
+                jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
+                for job in futures.as_completed(jobs):
+                    write_files(job.result()[1],job.result()[0])
+            finish_time = time.time()
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+        if mode=='seq_seq':
+            start_time = time.time() 
+            for i in range(len(readfiles)):
+                js,inp_file=FEFF_obj[i].particle_run()
+                write_files(js,inp_file)
+            finish_time = time.time()
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+        if mode=='mpi_seq':
+            start_time = time.time() 
+            for i in range(len(readfiles)):
+                js,inp_file=FEFF_obj[i].particle_run()
+                write_files(js,inp_file)
+            finish_time = time.time()
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+        if mode=='mpi_multi':
+            start_time = time.time() 
+            with confu.ThreadPoolExecutor(max_workers=tasks) as executor:
+                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                #for job in jobs:
+                #    write_files(job[1],job[0])
+                jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
+                for job in futures.as_completed(jobs):
+                    write_files(job.result()[1],job.result()[0])
+            finish_time = time.time()
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+
 
 if __name__ == '__main__':
     main()
