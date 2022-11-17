@@ -357,6 +357,26 @@ def main():
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
 
+        readout=glob.glob(f"output/*.json")
+        delete=0
+        for i in range(len(readout)):
+            try:    
+                with open(readout[i]) as f:
+                    data = json.load(f)
+                Energy=np.array(data['omega'],dtype=float)
+                mu=np.array(data['mu'],dtype=float)
+            except:
+                os.remove(readout[i])
+                write_outlog(f"{readout[i]} is removed!")
+                delete+=1
+        readout2=glob.glob(f"output/*.json")
+        write_outlog(f"delete {delete} files...")
+        write_outlog(f"have {len(readfiles)} files...")
+        write_outlog(f"calculate {len(readout2)}...")
+
+
+
+
     if args.run_file==True and restart==True:
         readfiles=glob.glob(f"FEFF_inp/*.inp")
         readout=glob.glob(f"output/*.json")
@@ -369,7 +389,7 @@ def main():
                 continue
             else:
                 input.append(readfiles[i])
-
+        
 
         
         if type(input)==str:
