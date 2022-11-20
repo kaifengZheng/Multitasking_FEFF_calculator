@@ -5,7 +5,7 @@ import json
 import os
 from tqdm import tqdm
 import argparse
-from concyrrent import futures
+from concurrent import futures
 
 parser=argparse.ArgumentParser(description="check corrupted files")
 parser.add_argument('-n','--cores',type=int,default=1,help='the number of works')
@@ -28,7 +28,7 @@ def check_files(filename,i):
         print(f"deleted {delete} corrupted files\n")
 
 
-readout=glob.glob(f"../output/*.json")
+readout=glob(f"../output/*.json")
 if type(readout)==str:
     readout=[readout]
 delete=0
@@ -37,3 +37,8 @@ with tqdm(total=len(readout)) as pbar:
         jobs=[executor.submit(check_files,readout,i) for i in range(len(readout))]
         for job in futures.as_completed(jobs):
             pbar.update(1)
+
+readin=glob(f"../FEFF_inp/*")
+residual = len(readin)-len(readout)
+print(f"calculated {len(readout)} files.")
+print(f"remain {residual} files.")
