@@ -1,2 +1,6 @@
 End in 0.00033321380615234373 min
 End in 6.0613718867301944 min
+CompletedProcess(args=['cd /gpfs/scratch/kaifzheng/FEFF/Ni79_site_2 && feff >>feff.out', 'wait'], returncode=0)
+CompletedProcess(args=['cd /gpfs/scratch/kaifzheng/FEFF/Ni147_site_4 && feff >>feff.out', 'wait'], returncode=0)
+CompletedProcess(args=['cd /gpfs/scratch/kaifzheng/FEFF/Ni147_site_1 && feff >>feff.out', 'wait'], returncode=0)
+CompletedProcess(args=['cd /gpfs/scratch/kaifzheng/FEFF/Ni147_site_3 && feff >>feff.out', 'wait'], returncode=0)

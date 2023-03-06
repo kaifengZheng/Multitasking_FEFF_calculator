@@ -37,8 +37,3 @@ with tqdm(total=len(readout)) as pbar:
         jobs=[executor.submit(check_files,readout,i) for i in range(len(readout))]
         for job in futures.as_completed(jobs):
             pbar.update(1)
-
-readin=glob(f"../FEFF_inp/*")
-residual = len(readin)-len(readout)
-print(f"calculated {len(readout)} files.")
-print(f"remain {residual} files.")

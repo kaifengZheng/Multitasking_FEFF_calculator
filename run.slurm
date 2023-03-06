@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #SBATCH --nodes=1
 #SBATCH --time=167:59:59
-#SBATCH --partition=extended-40core
+#SBATCH --partition=extended-96core
 #SBATCH --output=array_test.%N_%a.log
-#SBATCH --job-name=kaif
+#SBATCH --job-name=332
 #SBATCH --mail-user=kaifeng.zheng@stonybrook.edu
 #SBATCH --mail-type=ALL
 
@@ -18,4 +18,6 @@ module load 10.0.0
 
 ##module load gnu-parallel
 
-python run_FEFF.py -r	 
+python run_FEFF.py -w
+wait
+python run_FEFF.py -r

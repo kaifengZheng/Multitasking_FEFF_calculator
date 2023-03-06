@@ -4,8 +4,8 @@ import glob
 import datetime
 import time
 from pydoc import plain
-import concurrent.futures as confu
-from concurrent import futures
+#import concurrent.futures as confu
+#from concurrent import futures
 from pymatgen.core import Structure, Element,Molecule
 import pymatgen.io.feff
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -18,6 +18,7 @@ import os
 import argparse
 import json
 from tqdm import tqdm
+from mpi4py.futures import MPIPoolExecutor
 
 parser=argparse.ArgumentParser(description="calculation configuration")
 parser.add_argument('-w','--write_file',action='store_true',help='write FEFF input file')
@@ -301,7 +302,7 @@ def main():
                 # ############################################### 
         start_time = time.time()
         num_obj=len(FEFF_obj)
-        with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
+        with MPIPoolExecutor(max_workers=tasks) as executor:
             jobs=list(tqdm(executor.map(run_write,FEFF_obj),total=num_obj))
             finish_time = time.time() 
              
@@ -321,14 +322,14 @@ def main():
             FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
         if mode=='seq_multi':
             start_time = time.time() 
-            with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
+            with MPIPoolExecutor(max_workers=tasks) as executor:
+                jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                for job in jobs:
                 #    print(job)
-                #    write_files(job[1],job[0])
-                jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
-                for job in futures.as_completed(jobs):
-                    write_files(job.result()[1],job.result()[0])
+                    write_files(job[1],job[0])
+                #jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
+                #for job in futures.as_completed(jobs):
+                #    write_files(job.result()[1],job.result()[0])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='seq_seq':
@@ -347,15 +348,35 @@ def main():
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='mpi_multi':
             start_time = time.time() 
-            with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
-                #    write_files(job[1],job[0])
-                jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
-                for job in futures.as_completed(jobs):
-                    write_files(job.result()[1],job.result()[0])
+            with MPIPoolExecutor(max_workers=tasks) as executor:
+                jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                for job in jobs:
+                    write_files(job[1],job[0])
+                #jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
+                #for job in futures.as_completed(jobs):
+                #    write_files(job.result()[1],job.result()[0])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+
+        readout=glob.glob(f"output/*.json")
+        delete=0
+        for i in range(len(readout)):
+            try:    
+                with open(readout[i]) as f:
+                    data = json.load(f)
+                Energy=np.array(data['omega'],dtype=float)
+                mu=np.array(data['mu'],dtype=float)
+            except:
+                os.remove(readout[i])
+                write_outlog(f"{readout[i]} is removed!")
+                delete+=1
+        readout2=glob.glob(f"output/*.json")
+        write_outlog(f"delete {delete} files...")
+        write_outlog(f"have {len(readfiles)} files...")
+        write_outlog(f"calculate {len(readout2)}...")
+
+
+
 
     if args.run_file==True and restart==True:
         readfiles=glob.glob(f"FEFF_inp/*.inp")
@@ -369,7 +390,7 @@ def main():
                 continue
             else:
                 input.append(readfiles[i])
-
+        
 
         
         if type(input)==str:
@@ -384,14 +405,14 @@ def main():
             FEFF_obj.append(FEFF_cal(template_dir,input[i],scratch,CA,radius,site=site,numbers=numbers))
         if mode=='seq_multi':
             start_time = time.time() 
-            with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
+            with MPIPoolExecutor(max_workers=tasks) as executor:
+                jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                for job in jobs:
                 #    print(job)
-                #    write_files(job[1],job[0])
-                jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
-                for job in futures.as_completed(jobs):
-                    write_files(job.result()[1],job.result()[0])
+                    write_files(job[1],job[0])
+                #jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
+                #for job in futures.as_completed(jobs):
+                #    write_files(job.result()[1],job.result()[0])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='seq_seq':
@@ -410,13 +431,13 @@ def main():
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='mpi_multi':
             start_time = time.time() 
-            with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
-                #    write_files(job[1],job[0])
-                jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
-                for job in futures.as_completed(jobs):
-                    write_files(job.result()[1],job.result()[0])
+            with MPIPoolExecutor(max_workers=tasks) as executor:
+                jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                for job in jobs:
+                    write_files(job[1],job[0])
+                #jobs=[executor.submit(FEFF_obj_fun,FEFF_obj,i) for i in range(len(FEFF_obj))]
+                #for job in futures.as_completed(jobs):
+                #    write_files(job.result()[1],job.result()[0])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
 

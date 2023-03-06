@@ -11,5 +11,5 @@ pos_filename = ""
 average = true
 file_type="*.xyz"
 symmetry=true
-restart=true
+restart=false
 #site_rule="site=int(readfiles[i].split('.')[0].split('site_')[1])"
