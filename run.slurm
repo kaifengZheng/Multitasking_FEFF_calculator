@@ -4,7 +4,7 @@
 #SBATCH --partition=extended-96core
 #SBATCH --output=array_test.%N_%a.log
 #SBATCH --job-name=332
-#SBATCH --mail-user=kaifeng.zheng@stonybrook.edu
+#SBATCH --mail-user=
 #SBATCH --mail-type=ALL
 
 module load slurm
