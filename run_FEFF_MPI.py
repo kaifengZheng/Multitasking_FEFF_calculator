@@ -19,6 +19,7 @@ import argparse
 import json
 from tqdm import tqdm
 from mpi4py.futures import MPIPoolExecutor
+from mpi4py import MPI
 
 parser=argparse.ArgumentParser(description="calculation configuration")
 parser.add_argument('-w','--write_file',action='store_true',help='write FEFF input file')
@@ -274,7 +275,9 @@ class FEFF_cal:
 
 
 def main():
-
+    comm=MPI.COMM_WORLD
+    name=MPI.Get_Processor_name()
+    print(f'Using node: f{name}\n')
     if args.write_file==True:
         readfiles=glob.glob(f"input/{file_type}")
         if type(readfiles)==str:
