@@ -221,7 +221,14 @@ def write_templete_SCF(rfms=7,rscf=6):
 
     with open("template.inp",'w') as f:
         f.writelines(templete_array)
-
+def write_generator(filelist):
+    for i in range(len(filelist)):
+        unique_index,numbers = equ_sites_pointgroup(filelist[i])
+        for j in range(len(unique_index)):
+            yield FEFF_cal(template_dir,filelist[i],scratch,CA,radius,site=config['site'][j],numbers=numbers[j]).FEFFinp_gen()
+def run_generator(filelist):
+    for i in range(len(filelist)):
+        yield FEFF_cal(template_dir,filelist[i],scratch,CA,radius,site=config['site'][i],numbers=numbers[i]).particle_run()
 
 
 class FEFF_cal:
@@ -240,14 +247,7 @@ class FEFF_cal:
         self.inp_file="FEFF_inp/"+self.title+'.inp'
         self.mpi_cmd=f"mpirun -np {cores}"
         self.seq_cmd=str()
-    def write_generator(self,filelist):
-        for i in range(len(filelist)):
-            unique_index,numbers = equ_sites_pointgroup(filelist[i])
-            for j in range(len(unique_index)):
-                yield FEFF_cal(template_dir,filelist[i],scratch,CA,radius,site=config['site'][j],numbers=numbers[j]).FEFFinp_gen()
-    def run_generator(self,filelist):
-        for i in range(len(filelist)):
-            yield FEFF_cal(template_dir,filelist[i],scratch,CA,radius,site=config['site'][i],numbers=numbers[i]).particle_run()
+
 
     # def FEFFinp_gen(self):
     #     self.inp_file,self.title=write_FEFFinp(self.template_dir,self.pos_filename,self.CA,self.site,self.radius,self.numbers)
@@ -523,7 +523,7 @@ def mu_regrid_E_mu(E,mu):
 
         E_min=np.max(np.array(E_pf))
         E_max=np.min(np.array(E_pl))
-        new_E=np.linspace(E_min,E_max,1000)
+        new_E=np.linspace(E_min,E_max,100)
     for i in range(len(E)):
         mu_interp.append(interp1d(E_p[i],mu_p[i])(new_E))
 
@@ -590,13 +590,7 @@ def SCF_test_run():
         error_table.loc[(error_table['rSCF']==rSCF_num[i])&(error_table['rFMS']==np.min(np.array(rFMS))),'error']=np.abs(np.sum(np.array(SCFtable.iloc[1]['mu'])-np.array(SCFtable.iloc[0]['mu'])))
         for j in range(0,len(SCFtable)-1):
             error_table.loc[(error_table['rSCF']==rSCF_num[i])&(error_table['rFMS']==SCFtable.iloc[j+1]['rFMS']),'error']=np.abs(np.sum(np.array(SCFtable.iloc[j+1]['mu'])-np.array(SCFtable.iloc[j]['mu'])))
-
-
-            
-   
-   
-   
-   
+    
     np.save('E.npy',E_inter1)
     error_table.to_csv('error_table.csv')
 
@@ -617,7 +611,7 @@ def SCF_test_run():
     fig.savefig('spectra.png')
 def main():
     comm=MPI.COMM_WORLD
-    name=MPI.Get_Processor_name()
+    name=MPI.Get_processor_name()
     print(f'Using node: f{name}\n')
     if config['SCF_test']==True:
         SCF_test_run()
