@@ -605,6 +605,8 @@ def SCF_test_run():
     ax.legend(frameon=False)
     fig.savefig('spectra.png')
 def main():
+    comm=MPI.COMM_WORLD
+    name=MPI.Get_Processor_name()
     if config['SCF_test']==True:
         SCF_test_run()
     if config['SCF_test']==False:
