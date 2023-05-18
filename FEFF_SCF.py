@@ -22,6 +22,7 @@ from scipy.interpolate import interp1d
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
+from fastdist import fastdist
 matplotlib.use('Agg')
 
 parser=argparse.ArgumentParser(description="calculation configuration")
@@ -42,7 +43,7 @@ else:
 mode = config['mode']
 cores = int(config['cores'])
 tasks = int(config['tasks'])
-average = config['average']
+# average = config['average']
 file_type = config['file_type']
 symmetry= config['symmetry']
 restart=config['restart']
@@ -50,8 +51,9 @@ restart=config['restart']
 #SCF config
 SCF_test=config['SCF_test']
 particle=config['particle']
-rSCF=config['rSCF']
-rFMS=config['rFMS']
+if SCF_test==True:
+    rSCF=config['rSCF']
+    rFMS=config['rFMS']
 
 #site_rule = config['site_rule']
 
@@ -83,6 +85,54 @@ def write_FEFFinp(template_dir,pos_filename,CA,site,radius,numbers=0):
         f.write('\n')
         f.write("END\n")
     return f"FEFF_inp/{title}.inp",title
+
+def equ_sites(path:str,absorber,cutoff,randomness=4):
+    """
+    :param positions: coordinates
+    :param cutoff:    cutoff distance defined by mutiple scattering radius
+    :return:          non-equ position indexes
+    """
+    # cutoff method
+    def duplicates(lst, item):
+        """
+        :param lst: the whole list
+        :param item: item which you want to find the duplication in the list
+        :return: the indexes of duplicate items
+        """
+        return [i for i, x in enumerate(lst) if x == item]
+    
+    if path.split('.')[1]=='xyz':
+        structure=Molecule.from_file(path)
+    else:
+        structure = Structure.from_file(path) 
+
+    absorber_species = Element(absorber)
+    print(absorber_species)
+    absorber_list = np.where(np.array(structure.species) == absorber_species)[0]
+    positions=structure.cart_coords
+    dis_all =  np.around(fastdist.matrix_to_matrix_distance(np.array(positions)[absorber_list],np.array(positions), fastdist.euclidean, "euclidean"),decimals=randomness)
+    dis_all.sort(axis=1)
+    dis_cut = [list(dis_all[i][dis_all[i] < cutoff]) for i in range(len(dis_all))]
+    dup = []
+    for i in range(len(dis_cut)):
+        dup.append(duplicates(dis_cut, dis_cut[i])[0])
+    #unique_index = list(set(dup))  # set can delete all duplicated items in a list
+    unique_index = dict()
+    for i in range(len(dup)):
+        if dup[i] in unique_index:
+            unique_index[dup[i]].append(i)
+        else:
+            unique_index.update({dup[i]:[i]})
+    num_sites=[]
+    uni_sites=list(unique_index.keys())
+    for i in range(len(uni_sites)):
+        num_sites.append(len(unique_index[uni_sites[i]]))
+    # sort it using sorted method. Do not use list.sort() method, because it returns a nonetype.
+    #unique_index = np.array(sorted(unique_index))
+    #print("number of atoms: {}".format(len(positions)))
+    #print("number of unique atoms: {}".format(len(atom_index))) #
+    
+    return np.array(uni_sites),np.array(num_sites)  #keys are those unique sites, values are the cooresponding equ-sites for those unique_sites
 def equ_sites_pointgroup(pos_dir):
     mol=Molecule.from_file(pos_dir)
     pointgroup=pymatgen.symmetry.analyzer.PointGroupAnalyzer(mol).get_equivalent_atoms()['eq_sets']
@@ -253,6 +303,9 @@ class FEFF_cal:
                 }
         shutil.rmtree(run_dir) #test comment this line
         return js,self.inp_file
+    def input_generator(unique_index):
+        for i in range(len(unique_index)):
+            yield FEFF_cal(template_dir,filelist[i],scratch,CA,radius,site=config['site'][i],numbers=numbers[i])
 def writing_process():
     readfiles=glob.glob(f"input/{file_type}")
     if type(readfiles)==str:
@@ -496,13 +549,13 @@ def SCF_test_run():
              E_iter.append(test_results(filename[0])[0])
              mu_iter.append(test_results(filename[0])[1])
         if particle=='particle':
-             E_iter.append(mu_regrid_p(filename)[0])
+             E_iter=mu_regrid_p(filename)[0]
              mu=mu_regrid_p(filename)[1]
              mu_ave=average_mu(mu)
              mu_iter.append(mu_ave)
         con_save.append(con)
         #print(mu_iter,E_iter)
-    print(mu_iter)
+
     E_inter1,mu_inter1=mu_regrid_E_mu(E_iter,mu_iter)
     E_inter1=np.array(E_inter1)
     mu_inter1=np.array(mu_inter1)
