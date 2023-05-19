@@ -379,18 +379,6 @@ def run_process_from_fresh():
                 for job in jobs:
                     print(job.result()[1])
                     write_files(job.result()[0],job.result()[1])
-                #print("aaa")
-                #async_result=pool.map_async(FEFF_obj_fun,FEFF_obj)
-                #print(jobs)
-                #print("Done already?", async_result.ready())
-                #jobs=[async_result.get()]
-                #print(jobs)
-                #for job in jobs:
-                #    print("xxxx",job[1])
-                #    write_files(job[0],job[1])
-                #for job in jobs:
-                #    print(f"aaa={job[1]}")
-                #    write_files(job[0],job[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='seq_seq':
@@ -410,17 +398,15 @@ def run_process_from_fresh():
         if mode=='mpi_multi':
             start_time = time.time() 
             with MPIExecutor() as pool:
+                #print("aaa")
                 pool.workers_exit()
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
-                #    print(job)
-                #    write_files(job[1],job[0])
-                jobs=[pool.map(FEFF_obj_fun,FEFF_obj)]
+                jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
                 for job in jobs:
+                    print(job.result()[1])
                     write_files(job.result()[0],job.result()[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-    
+
 def run_process_from_restart():
     readfiles=glob.glob(f"FEFF_inp/*.inp")
     readout=glob.glob(f"output/*.json")
@@ -447,18 +433,15 @@ def run_process_from_restart():
         if mode=='seq_multi':
             start_time = time.time() 
             with MPIExecutor() as pool:
+                #print("aaa")
                 pool.workers_exit()
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
-                #    print(job)
-                #    write_files(job[1],job[0])
-                jobs=[pool.map(FEFF_obj_fun,FEFF_obj)]
+                jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
                 for job in jobs:
-                    #print(job.result()[0])
-                    write_files(job.result()[1],job.result()[0])
+                    print(job.result()[1])
+                    write_files(job.result()[0],job.result()[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-        if mode=='seq_seq':
+
             start_time = time.time() 
             for i in range(len(readfiles)):
                 js,inp_file=FEFF_obj[i].particle_run()
@@ -472,16 +455,12 @@ def run_process_from_restart():
                 write_files(js,inp_file)
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-        if mode=='mpi_multi':
-            start_time = time.time() 
             with MPIExecutor() as pool:
+                #print("aaa")
                 pool.workers_exit()
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
-                #    print(job)
-                #    write_files(job[1],job[0])
-                jobs=[pool.map(FEFF_obj_fun,FEFF_obj)]
+                jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
                 for job in jobs:
+                    print(job.result()[1])
                     write_files(job.result()[0],job.result()[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
@@ -508,7 +487,7 @@ def run_check():
     with tqdm(total=len(readout)) as pbar:
         with MPIExecutor() as pool:
             pool.workers_exit()
-            jobs=[pool.map(check_files,readout)]
+            jobs=list(pool.submit(check_files,readout[i]) for i in range(len(readout)))
             for job in jobs:
                 pbar.update(1)
 
@@ -568,12 +547,12 @@ def SCF_test_run():
     for example, con in tqdm(enumerate(configuration),total=len(configuration)):
         write_templete_SCF(rfms=con[1],rscf=con[0])
         writing_process()
-        #try:
-        run_process_from_fresh()
-        #except Exception as e:
-        #    subprocess.run(f'echo {e} >> output.log',shell=True)
-        #    exit()
-       # if args.run_file==True and restart==True:
+        try:
+            run_process_from_fresh()
+        except Exception as e:
+            subprocess.run(f'echo {e} >> output.log',shell=True)
+            exit()
+       #if args.run_file==True and restart==True:
        #     run_check()
        #     try:
        #         run_process_from_restart()
@@ -655,11 +634,11 @@ def main():
         if args.run_file==True and restart==False:
             #try:
                 #print("check1")
-            #try:
-            run_process_from_fresh()
-            #except Exception as e:
-            #    subprocess.run(f'echo {e} >> output.log',shell=True)
-            #    exit()
+            try:
+                run_process_from_fresh()
+            except Exception as e:
+                subprocess.run(f'echo {e} >> output.log',shell=True)
+                exit()
         if args.run_file==True and restart==True:
             run_check()
             try:
