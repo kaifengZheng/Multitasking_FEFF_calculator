@@ -1,22 +1,29 @@
 template_dir = "template.inp"
-#scratch = "/gpfs/scratch/kaifzheng/FEFF"
-scratch = "/data/scratch/kz/FEFF/"
-name='test_55'
+#scratch = "/gpfs/scratch//FEFF"
+scratch = "/gpfs/scratch//FEFF"
+name='test_200'
 particle='particle'
-SCF_test=true
+SCF_test=false
 CA = "Pt"
 radius = 100
 mode = "seq_multi"
 cores = 1
-tasks = 40
+tasks = 1
 site = [19] #site should biger than 1
+
+
+#radius for calculating symmetry
+cutoff = 6
+
 pos_filename = ""
-average = true
+
 file_type="*.xyz"
-rSCF=[5,7,8,9,10,15]
-rFMS=[3,5,7,8,9,10,12,15,17,20]
+#rSCF=[5,7,8,9,10,15]
+#rFMS=[3,5,7,8,9,10,12,15,17,20]
 #rSCF=[3,4]
 #rFMS=[3,4]
 symmetry=true
 restart=false
 #site_rule="site=int(readfiles[i].split('.')[0].split('site_')[1])"
+####future####
+average=false

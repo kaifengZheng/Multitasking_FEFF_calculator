@@ -4,8 +4,10 @@ import glob
 import datetime
 import time
 from pydoc import plain
-from mpi4py.futures import MPIPoolExecutor
 from mpi4py import MPI
+from mpipool import MPIExecutor
+from mpipool import MPIPool
+from multiprocessing import Pool
 from pymatgen.core import Structure, Element,Molecule
 import pymatgen.io.feff
 from pymatgen.io.ase import AseAtomsAdaptor
@@ -33,6 +35,7 @@ args=parser.parse_args()
 config=toml.load("config.toml")
 template_dir = config['template_dir']
 pos_filename = config['pos_filename']
+cutoff=config['cutoff']
 scratch = config['scratch']
 CA = config['CA']
 radius = config['radius']
@@ -42,7 +45,6 @@ else:
     site = config['site']
 mode = config['mode']
 cores = int(config['cores'])
-tasks = int(config['tasks'])
 # average = config['average']
 file_type = config['file_type']
 symmetry= config['symmetry']
@@ -107,7 +109,7 @@ def equ_sites(path:str,absorber,cutoff,randomness=4):
         structure = Structure.from_file(path) 
 
     absorber_species = Element(absorber)
-    print(absorber_species)
+    #print(absorber_species)
     absorber_list = np.where(np.array(structure.species) == absorber_species)[0]
     positions=structure.cart_coords
     dis_all =  np.around(fastdist.matrix_to_matrix_distance(np.array(positions)[absorber_list],np.array(positions), fastdist.euclidean, "euclidean"),decimals=randomness)
@@ -197,11 +199,12 @@ def write_files(js,inp_filename):
     print(inp_filename)
     title=inp_filename.split('.')[0].split('/')[-1]
     if not os.path.exists('output'):
-
         os.mkdir('output')
+    print(os.getcwd())
     json.dump(js, open(f"output/{title}.json", 'w'))
-def FEFF_obj_fun(obj,i):
-    return obj[i].particle_run()
+def FEFF_obj_fun(obj):
+    #print("run")
+    return obj.particle_run()
 def run_write(obj):
     return obj.FEFFinp_gen()
 def write_outlog(content):
@@ -218,17 +221,8 @@ def write_templete_SCF(rfms=7,rscf=6):
                      'EXCHANGE 0 0 0 -1\n',
                      'DEBYE 80 230 0\n',
                      f'SCF {rscf} 0 100 0.1 15\n']
-
     with open("template.inp",'w') as f:
         f.writelines(templete_array)
-def write_generator(filelist):
-    for i in range(len(filelist)):
-        unique_index,numbers = equ_sites_pointgroup(filelist[i])
-        for j in range(len(unique_index)):
-            yield FEFF_cal(template_dir,filelist[i],scratch,CA,radius,site=config['site'][j],numbers=numbers[j]).FEFFinp_gen()
-def run_generator(filelist):
-    for i in range(len(filelist)):
-        yield FEFF_cal(template_dir,filelist[i],scratch,CA,radius,site=config['site'][i],numbers=numbers[i]).particle_run()
 
 
 class FEFF_cal:
@@ -249,21 +243,28 @@ class FEFF_cal:
         self.seq_cmd=str()
 
 
-    # def FEFFinp_gen(self):
-    #     self.inp_file,self.title=write_FEFFinp(self.template_dir,self.pos_filename,self.CA,self.site,self.radius,self.numbers)
-    #     #print(f"writing {self.title}")
+    def FEFFinp_gen(self):    
+        self.inp_file,self.title=write_FEFFinp(self.template_dir,self.pos_filename,self.CA,self.site,self.radius,self.numbers)
+        #print(f"writing {self.title}")
     
     def particle_run(self):
-
+        #print("aaa")
+        rank=MPI.COMM_WORLD.Get_rank()
+        name=MPI.Get_processor_name()
+        #print(name,rank)
         run_dir = f"{self.scratch}/{config['name']}/{self.title}"
+        #print(run_dir)
         #subprocess.run(f"echo running FEFF on {self.title}...>> output.log",shell=True)
         #write_outlog(f"running FEFF on {self.title}...")
         if os.path.exists(f"{run_dir}"):
             shutil.rmtree(run_dir)
+        #print("bbbb")
         if not os.path.exists(f"{run_dir}"):
             os.makedirs(f"{run_dir}")
-        
+        #print("aaa") 
         shutil.copyfile(self.inp_file, f"{run_dir}/feff.inp")
+        #print("aaa")
+        #print(self.mode)
         if self.mode=='mpi_seq' or self.mode=='mpi_multi':
             start_time = time.time()  
             with open(f"{run_dir}/feff.out",'w') as f1:
@@ -272,17 +273,19 @@ class FEFF_cal:
             a=subprocess.run([f"cd {run_dir} && feffmpi {cores} >>feff.out","wait"],shell=True) #cd {run_dir} &&pwdfeffmpi {cores}>>feff.out
             #subprocess.run(f"echo {a.args[0]}>>output.log",shell=True)
             #subprocess.run(f"returncode={str(a.returncode[0])}>>output.log",shell=True)
-            write_outlog(f"{a}")
+            print(f"{a} at rank {rank} on {name}")
+            write_outlog(f"{a} at rank {rank} on {name}")
             finish_time = time.time()
         if self.mode=='seq_seq' or self.mode=='seq_multi':
-            start_time = time.time()  
+            start_time = time.time()
+            #print(start_time)
             with open(f"{run_dir}/feff.out",'w') as f1:
                 f1.write(f"----RUNNING FEFF ON {self.title} with {cores} cores-----\n\n")
             a=subprocess.run([f"cd {run_dir} && feff >>feff.out","wait"], shell=True)
             #subprocess.run(f"echo {a.args[0]}>>output.log",shell=True)
             #subprocess.run(f"echo returncode={str(a.returncode[0])}",shell=True)
-            #print(a)
-            write_outlog(f"{a}")
+            print(f"{a} at rank {rank} on {name}")
+            write_outlog(f"{a} at rank {rank} on {name}")
             finish_time = time.time()
         with open(f'{run_dir}/feff.inp') as f:
             feffinp = f.readlines()
@@ -313,8 +316,8 @@ class FEFF_cal:
                 'feffout': feffout,
                 }
         shutil.rmtree(run_dir) #test comment this line
+        #print(js)
         return js,self.inp_file
-            
 def writing_process():
     readfiles=glob.glob(f"input/{file_type}")
     if type(readfiles)==str:
@@ -323,56 +326,71 @@ def writing_process():
 
     if not os.path.exists("FEFF_inp"):
         os.mkdir("FEFF_inp")
-    else:
-        shutil.rmtree("FEFF_inp")
-        os.mkdir("FEFF_inp")
-    if particle=='particle':
-        # unique_index,numbers = equ_sites()
-        with MPIPoolExecutor(max_workers=tasks) as executor:
-            jobs=list(executor.map(FEFF_cal.write_generator,readfiles))
-    # for i in range(len(readfiles)):
-    #     if particle=='atom':
-    #         if len(config['site'])==1:
-    #             iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][0],numbers=1)
-    #             run_write(iter)
-    #         else:
-    #             for i in tqdm(range(len(config['site'])),total=len(config['site'])):
-    #                 iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][i],numbers=1)
-    #                 run_write(iter)
-        # if particle=='particle':
-        #         unique_index,numbers = equ_sites_pointgroup(readfiles[i])
-        #         for j in range(len(unique_index)):
-        #             FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=unique_index[j],numbers=numbers[j]))
-        #             #FEFF_obj[i].FEFFinp_gen(unique_index[j],numbers)
-        #             start_time = time.time()
-        #             num_obj=len(FEFF_obj)
-        #         with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
-        #             jobs=list(tqdm(executor.map(run_write,FEFF_obj),total=num_obj))
-        #         finish_time = time.time()
+    #else:
+    #    shutil.rmtree("FEFF_inp")
+    #    os.mkdir("FEFF_inp")
 
+    for i in range(len(readfiles)):
+        if particle=='atom':
+            if len(config['site'])==1:
+                iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][0],numbers=1)
+                run_write(iter)
+            else:
+                for i in tqdm(range(len(config['site'])),total=len(config['site'])):
+                    iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][i],numbers=1)
+                    run_write(iter)
+        if particle=='particle':
+                #unique_index,numbers = equ_sites_pointgroup(readfiles[i])
+                unique_index,numbers=equ_sites(readfiles[i],CA,cutoff=cutoff)
+            
+                for j in range(len(unique_index)):
+                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=unique_index[j],numbers=numbers[j]))
+                    #FEFF_obj[i].FEFFinp_gen(unique_index[j],numbers)
+                start_time = time.time()
+                num_obj=len(FEFF_obj)
+                with MPIExecutor() as pool:
+                    pool.workers_exit()
+                    jobs=list(tqdm(pool.map(run_write,FEFF_obj),total=num_obj))
+                finish_time = time.time()
+#def call_back_FEFF(result):
+    #print(result[0])
+#    write_files(result[0],result[1])
 def run_process_from_fresh():
     
         readfiles=glob.glob(f"FEFF_inp/*.inp")
         if type(readfiles)==str:
             readfiles=[readfiles]
         FEFF_obj=[]
-        for i in tqdm(range(len(readfiles))):
+        for i in tqdm(range(len(readfiles)),total=len(readfiles)):
             #print(readfiles[i])
             site=int(readfiles[i].split('.')[0].split('site_')[1].split('_n')[0])
             numbers=int(readfiles[i].split('.')[0].split('n_')[1])
-            #print(numbers)
+            #print(f"numbers={numbers},sites={site}!\n")
             FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
+            #print(f"ok I know I'm wrong! {FEFF_obj}")
         if mode=='seq_multi':
+            #print('aaa')
             start_time = time.time() 
-            with MPIPoolExecutor(max_workers=tasks) as executor:
-                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                #for job in jobs:
-                #    print(job)
-                #    write_files(job[1],job[0])
-                jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+
+            with MPIExecutor() as pool:
+                #print("aaa")
+                pool.workers_exit()
+                jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
                 for job in jobs:
-                    write_files(job[1],job[0])
-                
+                    print(job.result()[1])
+                    write_files(job.result()[0],job.result()[1])
+                #print("aaa")
+                #async_result=pool.map_async(FEFF_obj_fun,FEFF_obj)
+                #print(jobs)
+                #print("Done already?", async_result.ready())
+                #jobs=[async_result.get()]
+                #print(jobs)
+                #for job in jobs:
+                #    print("xxxx",job[1])
+                #    write_files(job[0],job[1])
+                #for job in jobs:
+                #    print(f"aaa={job[1]}")
+                #    write_files(job[0],job[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='seq_seq':
@@ -391,14 +409,15 @@ def run_process_from_fresh():
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='mpi_multi':
             start_time = time.time() 
-            with MPIPoolExecutor(max_workers=tasks) as executor:
+            with MPIExecutor() as pool:
+                pool.workers_exit()
                 #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
                 #for job in jobs:
                 #    print(job)
                 #    write_files(job[1],job[0])
-                jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                jobs=[pool.map(FEFF_obj_fun,FEFF_obj)]
                 for job in jobs:
-                    write_files(job[1],job[0])
+                    write_files(job.result()[0],job.result()[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
     
@@ -420,21 +439,23 @@ def run_process_from_restart():
         FEFF_obj=[]
         
 
-        for i in tqdm(range(len(input))):
+        for i in tqdm(range(len(input)),total=len(input)):
             site=int(input[i].split('.')[0].split('site_')[1].split('_n')[0])
             numbers=int(input[i].split('.')[0].split('n_')[1])
             #print(numbers)
             FEFF_obj.append(FEFF_cal(template_dir,input[i],scratch,CA,radius,site=site,numbers=numbers))
         if mode=='seq_multi':
             start_time = time.time() 
-            with MPIPoolExecutor(max_workers=tasks) as executor:
+            with MPIExecutor() as pool:
+                pool.workers_exit()
                 #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
                 #for job in jobs:
                 #    print(job)
                 #    write_files(job[1],job[0])
-                jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                jobs=[pool.map(FEFF_obj_fun,FEFF_obj)]
                 for job in jobs:
-                    write_files(job[1],job[0])
+                    #print(job.result()[0])
+                    write_files(job.result()[1],job.result()[0])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='seq_seq':
@@ -453,14 +474,18 @@ def run_process_from_restart():
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='mpi_multi':
             start_time = time.time() 
-            with MPIPoolExecutor(max_workers=tasks) as executor:
-                            #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                            #for job in jobs:
-                            #    print(job)
-                            #    write_files(job[1],job[0])
-                            jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
-                            for job in jobs:
-                                write_files(job[1],job[0])
+            with MPIExecutor() as pool:
+                pool.workers_exit()
+                #jobs=list(executor.map(FEFF_obj_fun,FEFF_obj))
+                #for job in jobs:
+                #    print(job)
+                #    write_files(job[1],job[0])
+                jobs=[pool.map(FEFF_obj_fun,FEFF_obj)]
+                for job in jobs:
+                    write_files(job.result()[0],job.result()[1])
+            finish_time = time.time()
+            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+
 def run_check():
     def check_files(filename,i):
         particle=filename[i].split('/')[2].split("_site")[0]
@@ -481,8 +506,9 @@ def run_check():
         readout=[readout]
     delete=0
     with tqdm(total=len(readout)) as pbar:
-        with MPIPoolExecutor(max_workers=cores) as executor:
-            jobs=list(executor.map(check_files,readout))
+        with MPIExecutor() as pool:
+            pool.workers_exit()
+            jobs=[pool.map(check_files,readout)]
             for job in jobs:
                 pbar.update(1)
 
@@ -523,7 +549,7 @@ def mu_regrid_E_mu(E,mu):
 
         E_min=np.max(np.array(E_pf))
         E_max=np.min(np.array(E_pl))
-        new_E=np.linspace(E_min,E_max,100)
+        new_E=np.linspace(E_min,E_max,1000)
     for i in range(len(E)):
         mu_interp.append(interp1d(E_p[i],mu_p[i])(new_E))
 
@@ -560,13 +586,13 @@ def SCF_test_run():
              E_iter.append(test_results(filename[0])[0])
              mu_iter.append(test_results(filename[0])[1])
         if particle=='particle':
-             E_iter=mu_regrid_p(filename)[0]
+             E_iter.append(mu_regrid_p(filename)[0])
              mu=mu_regrid_p(filename)[1]
              mu_ave=average_mu(mu)
              mu_iter.append(mu_ave)
         con_save.append(con)
         #print(mu_iter,E_iter)
-
+    print(mu_iter)
     E_inter1,mu_inter1=mu_regrid_E_mu(E_iter,mu_iter)
     E_inter1=np.array(E_inter1)
     mu_inter1=np.array(mu_inter1)
@@ -590,7 +616,13 @@ def SCF_test_run():
         error_table.loc[(error_table['rSCF']==rSCF_num[i])&(error_table['rFMS']==np.min(np.array(rFMS))),'error']=np.abs(np.sum(np.array(SCFtable.iloc[1]['mu'])-np.array(SCFtable.iloc[0]['mu'])))
         for j in range(0,len(SCFtable)-1):
             error_table.loc[(error_table['rSCF']==rSCF_num[i])&(error_table['rFMS']==SCFtable.iloc[j+1]['rFMS']),'error']=np.abs(np.sum(np.array(SCFtable.iloc[j+1]['mu'])-np.array(SCFtable.iloc[j]['mu'])))
-    
+
+
+            
+   
+   
+   
+   
     np.save('E.npy',E_inter1)
     error_table.to_csv('error_table.csv')
 
@@ -609,21 +641,25 @@ def SCF_test_run():
         ax.plot(E_inter1,np.array(error_table.iloc[i]['mu']),label=f"rSCF={error_table.iloc[i]['rSCF']} rFMS={error_table.iloc[i]['rFMS']}")
     ax.legend(frameon=False)
     fig.savefig('spectra.png')
+
+
 def main():
-    comm=MPI.COMM_WORLD
-    name=MPI.Get_processor_name()
-    print(f'Using node: f{name}\n')
+    #print("check0")
+    #print(config["SCF_test"])
+    #print(args.run_file)
     if config['SCF_test']==True:
         SCF_test_run()
     if config['SCF_test']==False:
         if args.write_file==True:
             writing_process()
         if args.run_file==True and restart==False:
-            try:
-                run_process_from_fresh()
-            except Exception as e:
-                subprocess.run(f'echo {e} >> output.log',shell=True)
-                exit()
+            #try:
+                #print("check1")
+            #try:
+            run_process_from_fresh()
+            #except Exception as e:
+            #    subprocess.run(f'echo {e} >> output.log',shell=True)
+            #    exit()
         if args.run_file==True and restart==True:
             run_check()
             try:
