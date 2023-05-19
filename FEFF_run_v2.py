@@ -261,7 +261,8 @@ class FEFF_cal:
         #print("bbbb")
         if not os.path.exists(f"{run_dir}"):
             os.makedirs(f"{run_dir}")
-        #print("aaa") 
+        #print("aaa")
+        print(self.inp_file)
         shutil.copyfile(self.inp_file, f"{run_dir}/feff.inp")
         #print("aaa")
         #print(self.mode)
@@ -377,32 +378,25 @@ def run_process_from_fresh():
                 pool.workers_exit()
                 jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
                 for job in jobs:
-                    print(job.result()[1])
+                    #print(job.result()[1])
                     write_files(job.result()[0],job.result()[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-        if mode=='seq_seq':
+        if mode=='seq_seq' or mode=='multi_seq':
             start_time = time.time() 
             for i in range(len(readfiles)):
                 js,inp_file=FEFF_obj[i].particle_run()
                 write_files(js,inp_file)
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-        if mode=='mpi_seq':
-            start_time = time.time() 
-            for i in range(len(readfiles)):
-                js,inp_file=FEFF_obj[i].particle_run()
-                write_files(js,inp_file)
-            finish_time = time.time()
-            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-        if mode=='mpi_multi':
+        if mode=='mpi_multi' or mode=='multi_multi':
             start_time = time.time() 
             with MPIExecutor() as pool:
                 #print("aaa")
                 pool.workers_exit()
                 jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
                 for job in jobs:
-                    print(job.result()[1])
+                    #print(job.result()[1])
                     write_files(job.result()[0],job.result()[1])
             finish_time = time.time()
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
@@ -420,69 +414,56 @@ def run_process_from_restart():
         else:
             input.append(readfiles[i])
         
-        if type(input)==str:
-            input=[input]
-        FEFF_obj=[]
+    if type(input)==str:
+        input=[input]
+        #print(f"input={len(input)}")
+    FEFF_obj=[]
         
 
-        for i in tqdm(range(len(input)),total=len(input)):
-            site=int(input[i].split('.')[0].split('site_')[1].split('_n')[0])
-            numbers=int(input[i].split('.')[0].split('n_')[1])
-            #print(numbers)
-            FEFF_obj.append(FEFF_cal(template_dir,input[i],scratch,CA,radius,site=site,numbers=numbers))
-        if mode=='seq_multi':
-            start_time = time.time() 
-            with MPIExecutor() as pool:
-                #print("aaa")
-                pool.workers_exit()
-                jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
-                for job in jobs:
-                    print(job.result()[1])
-                    write_files(job.result()[0],job.result()[1])
-            finish_time = time.time()
-            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+    for i in tqdm(range(len(input)),total=len(input)):
+        site=int(input[i].split('.')[0].split('site_')[1].split('_n')[0])
+        numbers=int(input[i].split('.')[0].split('n_')[1])
+        #print(numbers)
+        FEFF_obj.append(FEFF_cal(template_dir,input[i],scratch,CA,radius,site=site,numbers=numbers))
+    if mode=='seq_multi' or mode=='multi_multi':
+        start_time = time.time() 
+        with MPIExecutor() as pool:
+            #print("aaa")
+            pool.workers_exit()
+            jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
+            for job in jobs:
+                #print(job.result()[1])
+                write_files(job.result()[0],job.result()[1])
+        finish_time = time.time()
+        subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
 
-            start_time = time.time() 
-            for i in range(len(readfiles)):
-                js,inp_file=FEFF_obj[i].particle_run()
-                write_files(js,inp_file)
-            finish_time = time.time()
-            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-        if mode=='mpi_seq':
-            start_time = time.time() 
-            for i in range(len(readfiles)):
-                js,inp_file=FEFF_obj[i].particle_run()
-                write_files(js,inp_file)
-            finish_time = time.time()
-            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
-            with MPIExecutor() as pool:
-                #print("aaa")
-                pool.workers_exit()
-                jobs=list(pool.submit(FEFF_obj_fun,FEFF_obj[i]) for i in range(len(FEFF_obj)))
-                for job in jobs:
-                    print(job.result()[1])
-                    write_files(job.result()[0],job.result()[1])
-            finish_time = time.time()
-            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+    if mode=='mpi_seq' or mode=='seq_seq':
+        start_time = time.time() 
+        for i in range(len(readfiles)):
+            js,inp_file=FEFF_obj[i].particle_run()
+            write_files(js,inp_file)
+        finish_time = time.time()
+        subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
 
 def run_check():
-    def check_files(filename,i):
-        particle=filename[i].split('/')[2].split("_site")[0]
+    def check_files(filename):
+        #particle=filename.split('/')[2].split("_site")[0]
         try:
-            with open(filename[i]) as f:
+            with open(filename) as f:
                 data = json.load(f)
             Energy=np.array(data['omega'],dtype=float)
             mu=np.array(data['mu'],dtype=float)
-            site=int(filename[i].split("_site_")[1].split('_')[0])
-            n_sites=int(filename[i].split('n_')[1].split('.')[0])
+            site=int(filename.split("_site_")[1].split('_')[0])
+            n_sites=int(filename.split('n_')[1].split('.')[0])
         except:
-            os.remove(filename[i])
+            os.remove(filename)
             delete+=1
             print(f"""{readout[i]} is corrupted and deleted\n""")
             print(f"deleted {delete} corrupted files\n")
-    readout=glob(f"output/*.json")
+    readout=glob.glob(f"output/*.json")
     if type(readout)==str:
         readout=[readout]
+    print(len(readout))
     delete=0
     with tqdm(total=len(readout)) as pbar:
         with MPIExecutor() as pool:
@@ -490,7 +471,7 @@ def run_check():
             jobs=list(pool.submit(check_files,readout[i]) for i in range(len(readout)))
             for job in jobs:
                 pbar.update(1)
-
+    
 def test_results(filename):
     with open(filename,'r') as f1:
         data=json.load(f1)
@@ -547,18 +528,14 @@ def SCF_test_run():
     for example, con in tqdm(enumerate(configuration),total=len(configuration)):
         write_templete_SCF(rfms=con[1],rscf=con[0])
         writing_process()
-        try:
-            run_process_from_fresh()
-        except Exception as e:
-            subprocess.run(f'echo {e} >> output.log',shell=True)
-            exit()
-       #if args.run_file==True and restart==True:
-       #     run_check()
-       #     try:
-       #         run_process_from_restart()
-       #     except Exception as e:
-       #         subprocess.run(f'echo {e} >> output.log',shell=True)
-       #         exit()
+        #try:
+        #if args.run_file==True and restart==True:
+        #     run_check()
+        #     try:
+        #         run_process_from_restart()
+        #     except Exception as e:
+        #         subprocess.run(f'echo {e} >> output.log',shell=True)
+        #         exit()
         filename=glob.glob(f"output/*.json")
            
         if particle=='atom':
