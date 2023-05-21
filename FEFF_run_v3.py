@@ -25,7 +25,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib
 from fastdist import fastdist
+from typing import *
 matplotlib.use('Agg')
+
+comm=MPI.COMM_WORLD
+rank=MPI.COMM_WORLD.rank
+MPIComm = Union[MPI.Intracomm, MPI.Intercomm]
 
 parser=argparse.ArgumentParser(description="calculation configuration")
 parser.add_argument('-w','--write_file',action='store_true',help='write FEFF input file')
@@ -57,11 +62,15 @@ if SCF_test==True:
     rSCF=config['rSCF']
     rFMS=config['rFMS']
 
+
+
+
 #site_rule = config['site_rule']
 
 ######################HELP FUNCTIONS######################
 
 def write_FEFFinp(template_dir,pos_filename,CA,site,radius,numbers=0):
+    #write_MPIoutlog(f"write_FEFFinp rank:{rank}")
     #print(site)
     with open(template_dir) as f:
         template = f.readlines()
@@ -74,21 +83,23 @@ def write_FEFFinp(template_dir,pos_filename,CA,site,radius,numbers=0):
     #    title=pos_filename.split('.')[0].split('/')[-1]+f"_site_{site}"
     else:
         title=pos_filename.split('.')[0].split('/')[-1]
+    cal_pot=calc_pot_atoms_list(pos_filename, CA,radius)[site]
     with open(f"FEFF_inp//{title}.inp",'w') as f:
         f.write(f"TITLE {title}\n")
         f.writelines(template)
         f.write('\n\n')
         f.write("POTENTIALS\n")
         f.write("* ipot \t Z \t element \t l_scmt \t l_fms \t stoichiometry\n")
-        f.write(calc_pot_atoms_list(pos_filename, CA,radius)[site]["potential"])
+        f.write(cal_pot["potential"])
         f.write('\n\n')
         f.write("ATOMS\n")
-        f.write(calc_pot_atoms_list(pos_filename, CA,radius)[site]["atoms"])
+        f.write(cal_pot["atoms"])
         f.write('\n')
         f.write("END\n")
     return f"FEFF_inp/{title}.inp",title
 
 def equ_sites(path:str,absorber,cutoff,randomness=4):
+    #write_MPIoutlog(f"equ_sites rank:{rank}")
     """
     :param positions: coordinates
     :param cutoff:    cutoff distance defined by mutiple scattering radius
@@ -136,6 +147,7 @@ def equ_sites(path:str,absorber,cutoff,randomness=4):
     
     return np.array(uni_sites),np.array(num_sites)  #keys are those unique sites, values are the cooresponding equ-sites for those unique_sites
 def equ_sites_pointgroup(pos_dir):
+    #write_MPIoutlog(f"equ_sites_pointgroup rank:{rank}")
     mol=Molecule.from_file(pos_dir)
     pointgroup=pymatgen.symmetry.analyzer.PointGroupAnalyzer(mol).get_equivalent_atoms()['eq_sets']
     keys=list(pointgroup.keys())
@@ -145,6 +157,7 @@ def calc_pot_atoms_list(path, absorber = None, radius = 8, absorber_list = []):
     """
     Calculate the POTENTIAL and ATOMS card of feff input of given structure.
     """
+    #write_MPIoutlog(f"calc_pot_atoms_list rank:{rank}")
     if path.split('.')[1]=='xyz':
         structure=Molecule.from_file(path)
     else:
@@ -192,26 +205,35 @@ def calc_pot_atoms_list(path, absorber = None, radius = 8, absorber_list = []):
     return pot_atoms_list
 
 def run_mpi(cores,run_dir):
+    #write_MPIoutlog(f"run_mpi rank:{rank}")
     subprocess.run("cd "+ os.path.dirname(f"{run_dir}")+ f"&&feffmpi {cores}>>feff.out", shell=True)
 def run_seq(run_dir):
+    #write_MPIoutlog(f"run_seq rank:{rank}")
     subprocess.run("cd "+ os.path.dirname(f"{run_dir}")+ f"&&feff >>feff.out", shell=True)
 def write_files(js,inp_filename):
-    print(inp_filename)
+    #write_MPIoutlog(f"write_files rank:{rank}")
+    #print(inp_filename)
     title=inp_filename.split('.')[0].split('/')[-1]
     if not os.path.exists('output'):
         os.mkdir('output')
-    print(os.getcwd())
+    #print(os.getcwd())
     json.dump(js, open(f"output/{title}.json", 'w'))
 def FEFF_obj_fun(obj):
+    #write_MPIoutlog(f"FEFF_obj_fun rank:{rank}")
     #print("run")
     return obj.particle_run()
 def run_write(obj):
+    #write_MPIoutlog(f"run_write rank:{rank}")
     return obj.FEFFinp_gen()
 def write_outlog(content):
     with open("output.dat","a") as file1:
         file1.write(content+'\n')
+def write_MPIoutlog(content):
+    with open("MPIoutput.dat","a") as file1:
+        file1.write(content+'\n')
 
 def write_templete_SCF(rfms=7,rscf=6):
+    #write_MPIoutlog(f"write_templete_SCF:{rank}")
     templete_array=['EDGE L3\n',
                      'S02  0.9\n',
                      'COREHOLE NONE\n',
@@ -226,6 +248,7 @@ def write_templete_SCF(rfms=7,rscf=6):
 
 
 class FEFF_cal:
+
     def __init__(self,template_dir,pos_filename,scratch,CA,radius,site=0,numbers=0):
         self.template_dir=template_dir
         self.pos_filename=pos_filename
@@ -243,14 +266,17 @@ class FEFF_cal:
         self.seq_cmd=str()
 
 
-    def FEFFinp_gen(self):    
+    def FEFFinp_gen(self):   
+        #write_MPIoutlog(f"FEFFinp_gen rank:{rank}") 
         self.inp_file,self.title=write_FEFFinp(self.template_dir,self.pos_filename,self.CA,self.site,self.radius,self.numbers)
         #print(f"writing {self.title}")
     
     def particle_run(self):
+        
         #print("aaa")
         rank=MPI.COMM_WORLD.Get_rank()
         name=MPI.Get_processor_name()
+        #write_MPIoutlog(f"particle_run rank:{rank}")
         #print(name,rank)
         run_dir = f"{self.scratch}/{config['name']}/{self.title}"
         #print(run_dir)
@@ -261,8 +287,6 @@ class FEFF_cal:
         #print("bbbb")
         if not os.path.exists(f"{run_dir}"):
             os.makedirs(f"{run_dir}")
-        #print("aaa")
-        print(self.inp_file)
         shutil.copyfile(self.inp_file, f"{run_dir}/feff.inp")
         #print("aaa")
         #print(self.mode)
@@ -320,33 +344,44 @@ class FEFF_cal:
         #print(js)
         return js,self.inp_file
 def writing_process():
+    comm=MPI.COMM_WORLD
     rank=MPI.COMM_WORLD.rank
-    readfiles=glob.glob(f"input/{file_type}")
-    if type(readfiles)==str:
-        readfiles=[readfiles]
+    #write_MPIoutlog(f"writing_process rank:{rank}")
     FEFF_obj=[]
-    #print(os.path.exists("FEFF_inp"))
-    #if not os.path.exists("FEFF_inp"):
-    #    os.mkdir("FEFF_inp")
-    #else:
-    #    shutil.rmtree("FEFF_inp")
-    #    os.mkdir("FEFF_inp")
-
-    for i in range(len(readfiles)):
-        if particle=='atom':
-            if len(config['site'])==1:
-                iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][0],numbers=1)
-                run_write(iter)
+    if rank==0:
+        if args.write_file==True:
+            if not os.path.exists("FEFF_inp"):
+                os.mkdir("FEFF_inp")
             else:
-                for i in tqdm(range(len(config['site'])),total=len(config['site'])):
-                    iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][i],numbers=1)
+                shutil.rmtree("FEFF_inp")
+                os.mkdir("FEFF_inp")
+
+        readfiles=glob.glob(f"input/{file_type}")
+        if type(readfiles)==str:
+            readfiles=[readfiles]
+        
+        #print(os.path.exists("FEFF_inp"))
+        #if not os.path.exists("FEFF_inp"):
+        #    os.mkdir("FEFF_inp")
+        #else:
+        #    shutil.rmtree("FEFF_inp")
+        #    os.mkdir("FEFF_inp")
+        for i in range(len(readfiles)):
+            if particle=='atom':
+                if len(config['site'])==1:
+                    iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][0],numbers=1)
                     run_write(iter)
-        if particle=='particle':
-                #unique_index,numbers = equ_sites_pointgroup(readfiles[i])
-                unique_index,numbers=equ_sites(readfiles[i],CA,cutoff=cutoff)
+                else:
+                    for i in tqdm(range(len(config['site'])),total=len(config['site'])):
+                        iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][i],numbers=1)
+                        run_write(iter)
+            if particle=='particle':
+                unique_index,numbers = equ_sites_pointgroup(readfiles[i])
+                #unique_index,numbers=equ_sites(readfiles[i],CA,cutoff=cutoff)
                 for j in range(len(unique_index)):
                     FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=unique_index[j],numbers=numbers[j]))
                     #FEFF_obj[i].FEFFinp_gen(unique_index[j],numbers)
+
     start_time = time.time()
     num_obj=len(FEFF_obj)
     with MPIExecutor() as pool:
@@ -357,24 +392,26 @@ def writing_process():
     #print(result[0])
 #    write_files(result[0],result[1])
 def run_process_from_fresh():
-        rank=MPI.COMM_WORLD.rank
-        
-        print("rank 0")
-        readfiles=glob.glob(f"FEFF_inp/*.inp")
-        if type(readfiles)==str:
-            readfiles=[readfiles]
+        rank=0
+        if mode=='seq_multi' or mode=='multi_multi':
+            rank=MPI.COMM_WORLD.rank
         FEFF_obj=[]
-        for i in tqdm(range(len(readfiles)),total=len(readfiles)):
-            #print(readfiles[i])
-            site=int(readfiles[i].split('.')[0].split('site_')[1].split('_n')[0])
-            numbers=int(readfiles[i].split('.')[0].split('n_')[1])
-            #print(f"numbers={numbers},sites={site}!\n")
-            FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
-            #print(f"ok I know I'm wrong! {FEFF_obj}")
+        #write_MPIoutlog(f"run_process_from_fresh rank:{rank}")
+        if rank==0:
+            readfiles=glob.glob(f"FEFF_inp/*.inp")
+            if type(readfiles)==str:
+                readfiles=[readfiles]
+            
+            for i in tqdm(range(len(readfiles)),total=len(readfiles)):
+                #print(readfiles[i])
+                site=int(readfiles[i].split('.')[0].split('site_')[1].split('_n')[0])
+                numbers=int(readfiles[i].split('.')[0].split('n_')[1])
+                #print(f"numbers={numbers},sites={site}!\n")
+                FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
+                #print(f"ok I know I'm wrong! {FEFF_obj}")
         if mode=='seq_multi':
             #print('aaa')
             start_time = time.time() 
-
             with MPIExecutor() as pool:
                 #print("aaa")
                 pool.workers_exit()
@@ -382,8 +419,8 @@ def run_process_from_fresh():
                 for job in jobs:
                     #print(job.result()[1])
                     write_files(job.result()[0],job.result()[1])
-            finish_time = time.time()
-            subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
+                finish_time = time.time()
+                subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
         if mode=='seq_seq' or mode=='multi_seq':
             start_time = time.time() 
             for i in range(len(readfiles)):
@@ -404,25 +441,27 @@ def run_process_from_fresh():
             subprocess.run(f"echo End in {(finish_time-start_time)/60} min >>output.log",shell=True)
 
 def run_process_from_restart():
-    rank=MPI.COMM_WORLD.rank
-    
-    print("rank 02")
-    readfiles=glob.glob(f"FEFF_inp/*.inp")
-    readout=glob.glob(f"output/*.json")
-    out = []
-    input = []
-    for str1 in readout:
-        out.append(str1.split('/')[1].split('.')[0])
-    for i in range(len(readfiles)):
-        if readfiles[i].split('/')[1].split('.')[0] in out:
-            continue
-        else:
-            input.append(readfiles[i])
+    rank=0
+    if mode=='seq_multi' or mode=='multi_multi':
+        rank=MPI.COMM_WORLD.rank
+    FEFF_obj=[]
+    if rank==0:
+        readfiles=glob.glob(f"FEFF_inp/*.inp")
+        readout=glob.glob(f"output/*.json")
+        out = []
+        input = []
+        for str1 in readout:
+            out.append(str1.split('/')[1].split('.')[0])
+        for i in range(len(readfiles)):
+            if readfiles[i].split('/')[1].split('.')[0] in out:
+                continue
+            else:
+                input.append(readfiles[i])
+                
+            if type(input)==str:
+                input=[input]
+                #print(f"input={len(input)}")
             
-        if type(input)==str:
-            input=[input]
-            #print(f"input={len(input)}")
-        FEFF_obj=[]
         for i in tqdm(range(len(input)),total=len(input)):
             site=int(input[i].split('.')[0].split('site_')[1].split('_n')[0])
             numbers=int(input[i].split('.')[0].split('n_')[1])
@@ -461,20 +500,17 @@ def run_check():
         except:
             os.remove(filename)
             delete+=1
-            print(f"""{readout[i]} is corrupted and deleted\n""")
+            print(f"""{filename} is corrupted and deleted\n""")
             print(f"deleted {delete} corrupted files\n")
+    rank=0
     rank=MPI.COMM_WORLD.rank
-    readout=glob.glob(f"output/*.json")
-    if type(readout)==str:
-        readout=[readout]
-    print(len(readout))
-    delete=0
-    with tqdm(total=len(readout)) as pbar:
+    if rank==0:
+        readout=glob.glob(f"output/*.json")
+        if type(readout)==str:
+            readout=[readout]
         with MPIExecutor() as pool:
             pool.workers_exit()
-            jobs=list(pool.submit(check_files,readout[i]) for i in range(len(readout)))
-            for job in jobs:
-                pbar.update(1)
+            jobs=list(pool.submit(check_files,readout[i]) for i in tqdm(range(len(readout)),total=len(readout)))
     
 def test_results(filename):
     with open(filename,'r') as f1:
@@ -552,7 +588,6 @@ def SCF_test_run():
              mu_iter.append(mu_ave)
         con_save.append(con)
         #print(mu_iter,E_iter)
-    print(mu_iter)
     E_inter1,mu_inter1=mu_regrid_E_mu(E_iter,mu_iter)
     E_inter1=np.array(E_inter1)
     mu_inter1=np.array(mu_inter1)
@@ -600,29 +635,21 @@ def main():
     #print("check0")
     #print(config["SCF_test"])
     #print(args.run_file)
-
     
     if config['SCF_test']==True:
         SCF_test_run()
     if config['SCF_test']==False:
         rank=MPI.COMM_WORLD.rank
-    
-        print("rank 0_1")
         if args.write_file==True:
-            if not os.path.exists("FEFF_inp"):
-                os.mkdir("FEFF_inp")
-            else:
-                shutil.rmtree("FEFF_inp")
-                os.mkdir("FEFF_inp")
-        writing_process()
+            writing_process()
         if args.run_file==True and restart==False:
             #try:
                 #print("check1")
-            try:
-                run_process_from_fresh()
-            except Exception as e:
-                subprocess.run(f'echo {e} >> output.log',shell=True)
-                exit()
+            # try:
+            run_process_from_fresh()
+            # except Exception as e:
+            #     subprocess.run(f'echo {e} >> output.log',shell=True)
+            #     exit()
         if args.run_file==True and restart==True:
             run_check()
             try:
