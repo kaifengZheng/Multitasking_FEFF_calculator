@@ -366,7 +366,7 @@ def writing_process():
         #else:
         #    shutil.rmtree("FEFF_inp")
         #    os.mkdir("FEFF_inp")
-        for i in tqdm(range(len(readfiles)),total=len(readfiles)):
+        for i in range(len(readfiles)):
             if particle=='atom':
                 if len(config['site'])==1:
                     iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][0],numbers=1)
@@ -376,8 +376,8 @@ def writing_process():
                         iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][i],numbers=1)
                         run_write(iter)
             if particle=='particle':
-                #unique_index,numbers = equ_sites_pointgroup(readfiles[i])
-                unique_index,numbers=equ_sites(readfiles[i],CA,cutoff=cutoff)
+                unique_index,numbers = equ_sites_pointgroup(readfiles[i])
+                #unique_index,numbers=equ_sites(readfiles[i],CA,cutoff=cutoff)
                 for j in range(len(unique_index)):
                     FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=unique_index[j],numbers=numbers[j]))
                     #FEFF_obj[i].FEFFinp_gen(unique_index[j],numbers)
@@ -386,7 +386,8 @@ def writing_process():
     num_obj=len(FEFF_obj)
     with MPIExecutor() as pool:
         pool.workers_exit()
-        jobs=list(tqdm(pool.map(run_write,FEFF_obj),total=num_obj))
+        jobs=list(tqdm(pool.submit(run_write,FEFF_obj[i]) for i in range(len(FEFF_obj))),total=num_obj)
+        pool.submit(FEFF_obj_fun,FEFF_obj[i]),for i in range(len(FEFF_obj))
     finish_time = time.time()
 #def call_back_FEFF(result):
     #print(result[0])
