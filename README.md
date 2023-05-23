@@ -60,7 +60,17 @@ This section should list any major libraries and softwares used to bootstrap my 
 ### Usage
 
 #### environment
-First, make sure FEFF package is built on your system, and then go into `module_file`, and run:
+First configure the correct mpi environment on your computer, you can look my configurations in the `run.slurm`. open `module_file/FEFF/10.0.0`, put your FEFF package path and mpi configurations in the following lines:
+*environment configuration
+ ```sh
+  set               root              # add FEFF dir here!
+
+
+if { ![ is-loaded intel/oneAPI/2022.2 ] }         { module load intel/oneAPI/2022.2 }
+if { ![ is-loaded mpi ] }         { module load mpi }
+if { ![ is-loaded mkl ] }         { module load mkl }
+```
+  <br>make sure FEFF package is built on your system, and then go into `module_file`, and run:
 * module
   ```sh
   module use FEFF
