@@ -30,7 +30,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-This package can be used to run multiple FEFF calculations in parallel, which decrease the amount of calculation time when one want to run huge amount of FEFF caluclations.For an instance, one may be interested in particle averaged spectra for different shape particles. If those particles are irregular, most likely, every atoms are inequivalent. Therefore, we need to calculate thousands or hundard thousands spectra. Itis not possible to use the sequential or mpi version of FEFF to run in a queue in a reasonable time(3000 147-atom particles requires 300 more days to finish it!) Using this package will decrease the calculation time dramatically, and will finished within one week(use 3x96 core on seawulf).  
+This package can be used to run multiple FEFF calculations in parallel, which decrease the amount of calculation time when one want to run huge amount of FEFF caluclations.For an instance, one may be interested in particle averaged spectra for different shape particles. If those particles are irregular, most likely, every atoms are inequivalent. Therefore, we need to calculate thousands or hundard thousands spectra. It is not possible to use either the sequential or mpi version of FEFF to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles requires 300 more days to finish it!) Using this package will decrease the calculation time dramatically, and will finished within one week(use 3x96 core on cluster).  
 
 
 
