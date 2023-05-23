@@ -1,16 +1,5 @@
 # Parallel spectra calculator
 
-[![Contributors][contributors-shield]][contributors-url]
-[![Forks][forks-shield]][forks-url]
-[![Stargazers][stars-shield]][stars-url]
-[![Issues][issues-shield]][issues-url]
-[![MIT License][license-shield]][license-url]
-[![LinkedIn][linkedin-shield]][linkedin-url]
-
-
-
-
-
 <p align="center">
   <img width="1300" height="200" src="https://github.com/kaifengZheng/FEFF_package/assets/48105165/ccccd72e-1292-4875-8232-dc87a0f0967e">
 </p>
