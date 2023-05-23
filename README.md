@@ -70,14 +70,15 @@ if { ![ is-loaded intel/oneAPI/2022.2 ] }         { module load intel/oneAPI/202
 if { ![ is-loaded mpi ] }         { module load mpi }
 if { ![ is-loaded mkl ] }         { module load mkl }
 ```
-  <br>make sure FEFF package is built on your system, and then go into `module_file`, and run:
+Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and change the `PATH` inside those files to the `feff/bin` path.<br>
+  
+<br>make sure FEFF package is built on your system, and then go into `module_file`, and run:
 * module
   ```sh
   module use FEFF
   module load 10.0.0
   ```
 
- Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and change the `PATH` inside those files to the `feff/bin` path.<br>
   
  It will enable the FEFF10 calculator, and then you can run FEFF simply by click:
  * run FEFF
