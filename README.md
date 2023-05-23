@@ -76,12 +76,15 @@ if { ![ is-loaded mkl ] }         { module load mkl }
   module use FEFF
   module load 10.0.0
   ```
-  It will enable the FEFF10 calculator, and then you can run FEFF simply by click:
-  * run FEFF
-  ```sh
-  feff #for sequential FEFF
-  mpifeff 8 #for mpi feff running on 8 cpus
-  ```
+
+ Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and change the `PATH` inside those files to the `feff/bin` path.<br>
+  
+ It will enable the FEFF10 calculator, and then you can run FEFF simply by click:
+ * run FEFF
+ ```sh
+ feff #for sequential FEFF
+ mpifeff 8 #for mpi feff running on 8 cpus
+ ```
 #### run
 Create a new diractory and clone the whole package into it. The main program is `FEFF_run_v3.py`. This code will treat writing and running as sperate processes.<br>
 For writing process, one needs to prepare `input` directory to store all coordinates files(xyz,cif,POSCAR),confiugration file: `config.toml`. and template file:`template.inp`. Running by use:
