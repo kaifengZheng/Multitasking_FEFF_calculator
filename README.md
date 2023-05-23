@@ -21,7 +21,7 @@
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
-        <li><a href="#Packages">Packages</a></li>
+        <li><a href="### Packages">Packages</a></li>
         <li><a href="#Usage">Usage</a></li>
       </ul>
     </li>
@@ -53,7 +53,7 @@ Why I design this package:
 
 The main code is `FEFF_run_v3.py`
 
-### Built With
+### Packages
 
 This section should list any major libraries and softwares used to bootstrap my project. 
 <br><ins>Spectra calculators:<ins>
