@@ -84,7 +84,7 @@ Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and ch
  * run FEFF
  ```sh
  feff #for sequential FEFF
- mpifeff 8 #for mpi feff running on 8 cpus
+ feffmpi 8 #for mpi feff running on 8 cpus
  ```
 #### run
 Create a new diractory and clone the whole package into it. The main program is `FEFF_run_v3.py`. This code will treat writing and running as sperate processes.<br>
