@@ -1,29 +1,31 @@
+#specific directory
 template_dir = "template.inp"
-#scratch = "/gpfs/scratch//FEFF"
 scratch = "/gpfs/scratch//FEFF"
 name='test_200'
-particle='particle'
+
+#specific the method for writting FEFF inputfiles
+particle='particle' #atom: specific site, particle: finding the inequivalent sites
+CA = "Pt" #absorber atom type
+radius = 100 #How large of the size of particle for this calculation
+
+cutoff = 9 #radius for calculating symmetry using distance matrix method.
+file_type="*.xyz" #specific the format of input file(we can also use cif, POSCAR)
+
+#calculation specification
+mode = "seq_multi"#the method to use(seq_seq, seq_multi,multi_multi and multi_seq)
+cores = 1#number of cpu to use(unused)
+tasks = 1#number of tasks go parallel(unused)
+site = [19] #site should greater than or equal to 1(use it if you don't want to calculate inequivalent sites)
+restart=false
+
+
+#run SCF_test to check rSCF and rFMS
 SCF_test=false
-CA = "Pt"
-radius = 100
-mode = "seq_multi"
-cores = 1
-tasks = 1
-site = [19] #site should biger than 1
-
-
-#radius for calculating symmetry
-cutoff = 6
-
-pos_filename = ""
-
-file_type="*.xyz"
 #rSCF=[5,7,8,9,10,15]
 #rFMS=[3,5,7,8,9,10,12,15,17,20]
 #rSCF=[3,4]
 #rFMS=[3,4]
-symmetry=true
-restart=false
-#site_rule="site=int(readfiles[i].split('.')[0].split('site_')[1])"
+
+
 ####future####
 average=false

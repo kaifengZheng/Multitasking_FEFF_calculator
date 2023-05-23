@@ -1,0 +1,20 @@
+#!/bin/bash
+FeffPath=FEFF10/bin/MPI
+MPICOMMAND="mpirun -np $1 "
+$MPICOMMAND $FeffPath/rdinp
+$MPICOMMAND $FeffPath/atomic
+$MPICOMMAND $FeffPath/dmdw
+$MPICOMMAND $FeffPath/opconsat
+$MPICOMMAND $FeffPath/pot
+$MPICOMMAND $FeffPath/ldos
+$MPICOMMAND $FeffPath/screen
+$MPICOMMAND $FeffPath/xsph
+$MPICOMMAND $FeffPath/fms
+$MPICOMMAND $FeffPath/mkgtr
+$MPICOMMAND $FeffPath/path
+$MPICOMMAND $FeffPath/genfmt
+$MPICOMMAND $FeffPath/ff2x
+$MPICOMMAND $FeffPath/sfconv
+$MPICOMMAND $FeffPath/compton
+$MPICOMMAND $FeffPath/eels
+$MPICOMMAND $FeffPath/rhorrp
