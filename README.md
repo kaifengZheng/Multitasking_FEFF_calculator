@@ -190,7 +190,7 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Kaifeng Zheng - kaifeng.zheng@stonybrook.edu
 
-Project Link: [https://github.com/your_username/repo_name](https://github.com/your_username/repo_name)
+Project Link: [https://github.com/your_username/repo_name](https://github.com/kaifengZheng/FEFF_package.git)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
