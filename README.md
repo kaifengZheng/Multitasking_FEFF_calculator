@@ -11,7 +11,7 @@
     <li>
       <a href="#about-the-project">About The Project</a>
       <ul>
-        <li><a href="### Packages">Packages</a></li>
+        <li><a href="#Packages">Packages</a></li>
         <li><a href="#Usage">Usage</a></li>
       </ul>
     </li>
