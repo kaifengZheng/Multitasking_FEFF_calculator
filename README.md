@@ -30,7 +30,7 @@
 
 <!-- ABOUT THE PROJECT -->
 ## About The Project
-This package can be used to run multiple FEFF calculations in parallel, which decrease the amount of calculation time when one want to run huge amount of FEFF caluclations.For an instance, one may be interested in particle averaged spectra for different shape particles. If those particles are irregular, most likely, every atoms are inequivalent. Therefore, we need to calculate thousands or hundard thousands spectra. It is not possible to use either the sequential or mpi version of FEFF to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles requires 300 more days to finish it!) Using this package will decrease the calculation time dramatically, and will finished within one week(use 3x96 core on cluster).  
+This package can be used to run multiple FEFF calculations in parallel, decreasing the amount of calculation time when one wants to run huge FEFF calculations. For instance, one may be interested in particle-averaged spectra for different shape particles. If those particles are irregular, most likely, every atom is inequivalent. Therefore, we need to calculate thousands or hundred thousand spectra. Using either the sequential or mpi version of FEFF is impossible to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles require 300 more days to finish it!) Using this package will decrease the calculation time dramatically and will be finished within one week(use 3x96 core on cluster). 
 
 
 
@@ -60,7 +60,7 @@ This section should list any major libraries and softwares used to bootstrap my 
 ### Usage
 
 #### environment
-First configure the correct mpi environment on your computer, you can look my configurations in the `run.slurm`. open `module_file/FEFF/10.0.0`, put your FEFF package path and mpi configurations in the following lines:
+First, configure the correct mpi environment on your computer. You could check my configurations in the `run.slurm`. open `module_file/FEFF/10.0.0`, put your FEFF package path and mpi configurations in the following lines:
 *environment configuration
  ```sh
   set               root              # add FEFF dir here!
