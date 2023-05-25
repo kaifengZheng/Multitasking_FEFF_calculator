@@ -48,6 +48,7 @@ The functionality of the package:
 * `toolbox` provides the average method
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Packages
 This section should list any major libraries and softwares used to bootstrap my project. 
 <br><ins>Spectra calculators:<ins>
