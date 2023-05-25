@@ -43,7 +43,7 @@ Why I design this package:
 
 The main code is `FEFF_run_v3.py`
 
-### Packages
+## Packages
 
 This section should list any major libraries and softwares used to bootstrap my project. 
 <br><ins>Spectra calculators:<ins>
@@ -57,13 +57,11 @@ This section should list any major libraries and softwares used to bootstrap my 
 * mpi4py https://mpi4py.readthedocs.io/en/stable/
 * mpipool https://pypi.org/project/mpipool/
 
-### Usage
-
-#### environment
+## Environment setting
 First, configure the correct mpi environment on your computer. You could check my configurations in the `run.slurm`. open `module_file/FEFF/10.0.0`, put your FEFF package path and mpi configurations in the following lines:
 *environment configuration
  ```sh
-  set               root              # add FEFF dir here!
+  set               root              [add FEFF dir here!]
 
 
 if { ![ is-loaded intel/oneAPI/2022.2 ] }         { module load intel/oneAPI/2022.2 }
@@ -86,7 +84,10 @@ Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and ch
  feff #for sequential FEFF
  feffmpi 8 #for mpi feff running on 8 cpus
  ```
-#### run
+## Configuration file
+The configurations of the calculation stores in toml format. Here is the whole script:
+ 
+## Run
 Create a new diractory and clone the whole package into it. The main program is `FEFF_run_v3.py`. This code will treat writing and running as sperate processes.<br>
 For writing process, one needs to prepare `input` directory to store all coordinates files(xyz,cif,POSCAR),confiugration file: `config.toml`. and template file:`template.inp`. Running by use:
   ```sh
@@ -106,42 +107,19 @@ For running process, one needs `config.toml`, 'FEFF_inp' directory(which generat
 
 ### Prerequisites
 
-This is an example of how to list things you need to use the software and how to install them.
-* npm
+People can install all the dependency using:
   ```sh
-  npm install npm@latest -g
+  pip install -r requirements.txt
   ```
 
-### Installation
-
-_Below is an example of how you can instruct your audience on installing and setting up your app. This template doesn't rely on any external dependencies or services._
-
-1. Get a free API Key at [https://example.com](https://example.com)
-2. Clone the repo
-   ```sh
-   git clone https://github.com/your_username_/Project-Name.git
-   ```
-3. Install NPM packages
-   ```sh
-   npm install
-   ```
-4. Enter your API in `config.js`
-   ```js
-   const API_KEY = 'ENTER YOUR API';
-   ```
-
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-
-
 <!-- USAGE EXAMPLES -->
-## Usage
+## Examples
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+Some cif examples are stored in `cif_input_samples`, and xyz examples are stored in `input`.<br>
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
-<p align="right">(<a href="#readme-top">back to top</a>)</p>
+<p align="right">(<a href="#Parallel spectra calculator-top">back to top</a>)</p>
 
 
 
