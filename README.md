@@ -62,6 +62,8 @@ This section should list any major libraries and softwares used to bootstrap my 
 * mpi4py https://mpi4py.readthedocs.io/en/stable/
 * mpipool https://pypi.org/project/mpipool/
 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Environment setting
 First, configure the correct mpi environment on your computer. You could check my configurations in the `run.slurm`. open `module_file/FEFF/10.0.0`, put your FEFF package path and mpi configurations in the following lines:
 *environment configuration
@@ -89,11 +91,11 @@ Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and ch
  feff #for sequential FEFF
  feffmpi 8 #for mpi feff running on 8 cpus
  ```
-
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Configuration file
-The configurations of the calculation stores in toml format. Here is the whole script:
-
+The configurations of the calculation stores in toml format. Please check [Documentation]()
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Run
 Create a new diractory and clone the whole package into it. The main program is `FEFF_run_v3.py`. This code will treat writing and running as sperate processes.<br>
@@ -109,6 +111,7 @@ For running process, one needs `config.toml`, 'FEFF_inp' directory(which generat
 <!-- WORKFLOW -->
  
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Workflow
 
 <p align="center">
@@ -125,11 +128,12 @@ People can install all the dependency using:
 <!-- USAGE EXAMPLES -->
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 ## Examples
 
 Some cif examples are stored in `cif_input_samples`, and xyz examples are stored in `input`.<br>
 
-_For more examples, please refer to the [Documentation](https://example.com)_
+_For more examples, please refer to the [Documentation]()
 
 
 
