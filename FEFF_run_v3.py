@@ -505,14 +505,17 @@ def run_check():
             print(f"deleted {delete} corrupted files\n")
     rank=0
     rank=MPI.COMM_WORLD.rank
-    if rank==0:
-        readout=glob.glob(f"output/*.json")
-        if type(readout)==str:
-            readout=[readout]
+    
+    readout=glob.glob(f"output/*.json")
+    if type(readout)==str:
+        readout=[readout]
+    if mode=='multi_seq' or mode=='multi_multi':
         with MPIExecutor() as pool:
             pool.workers_exit()
             jobs=list(pool.submit(check_files,readout[i]) for i in tqdm(range(len(readout)),total=len(readout)))
-    
+    if mode=='seq_seq' or mode=='seq_multi':
+        for i in tqdm(range(len(readout)),total=len(readout)):
+            check_files(readout[i])
 def test_results(filename):
     with open(filename,'r') as f1:
         data=json.load(f1)
