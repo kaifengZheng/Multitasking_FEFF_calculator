@@ -1,5 +1,5 @@
 # Parallel spectra calculator
-
+<a name="readme-top"></a>
 <p align="center">
   <img width="1300" height="200" src="https://github.com/kaifengZheng/FEFF_package/assets/48105165/ccccd72e-1292-4875-8232-dc87a0f0967e">
 </p>
@@ -29,22 +29,26 @@
 
 
 <!-- ABOUT THE PROJECT -->
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 ## About The Project
-This package can be used to run multiple FEFF calculations in parallel, decreasing the amount of calculation time when one wants to run huge FEFF calculations. For instance, one may be interested in particle-averaged spectra for different shape particles. If those particles are irregular, most likely, every atom is inequivalent. Therefore, we need to calculate thousands or hundred thousand spectra. Using either the sequential or mpi version of FEFF is impossible to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles require 300 more days to finish it!) Using this package will decrease the calculation time dramatically and will be finished within one week(use 3x96 core on cluster). 
-
-
+This package can be used to run multiple FEFF calculations in parallel, decreasing the amount of calculation time when one wants to run huge FEFF calculations. For instance, one may be interested in particle-averaged spectra for different shape particles. If those particles are irregular, most likely, every atom is inequivalent. Therefore, we need to calculate thousands or hundred thousand spectra. Using either the sequential or mpi version of FEFF is impossible to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles require 300 more days to finish it!) Using this package will decrease the calculation time dramatically and will be finished within one week(use 3x96 core on cluster). <br>
 
 Why I design this package:
 * Decrease the calculation time ⏲️
 * Make the FEFF calculation easier ⚛️
 * Provide useful functions(average) 😸
 
+The functionality of the package:
+* run calculations(now only for FEFF) in parallel
+* can restart the calculations(now only for FEFF) from the checkpoint
+* allow coordinates as the input file
+* can use SCF to tune calculation(now only for FEFF) parameters
+* flexable modes for running the calculation
+* Only support linux system(parallel mode needs mpi support)
+* `toolbox` provides the average method
+
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
-
-The main code is `FEFF_run_v3.py`
-
 ## Packages
-
 This section should list any major libraries and softwares used to bootstrap my project. 
 <br><ins>Spectra calculators:<ins>
 * FEFF https://feff.phys.washington.edu/<br>
@@ -84,9 +88,12 @@ Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and ch
  feff #for sequential FEFF
  feffmpi 8 #for mpi feff running on 8 cpus
  ```
+
+
 ## Configuration file
 The configurations of the calculation stores in toml format. Here is the whole script:
- 
+
+
 ## Run
 Create a new diractory and clone the whole package into it. The main program is `FEFF_run_v3.py`. This code will treat writing and running as sperate processes.<br>
 For writing process, one needs to prepare `input` directory to store all coordinates files(xyz,cif,POSCAR),confiugration file: `config.toml`. and template file:`template.inp`. Running by use:
@@ -99,6 +106,8 @@ For running process, one needs `config.toml`, 'FEFF_inp' directory(which generat
   ``` 
 
 <!-- WORKFLOW -->
+ 
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 ## Workflow
 
 <p align="center">
@@ -113,13 +122,14 @@ People can install all the dependency using:
   ```
 
 <!-- USAGE EXAMPLES -->
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
 ## Examples
 
 Some cif examples are stored in `cif_input_samples`, and xyz examples are stored in `input`.<br>
 
 _For more examples, please refer to the [Documentation](https://example.com)_
 
-<p align="right">(<a href="#Parallel spectra calculator-top">back to top</a>)</p>
 
 
 
