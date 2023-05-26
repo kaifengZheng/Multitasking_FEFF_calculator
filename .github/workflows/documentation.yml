@@ -16,7 +16,7 @@ jobs:
         run: |
           sphinx-build docs docs/_build
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
+        uses: peaceiris/actions-distortion@v3
         if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/distortion' }}
         with:
           publish_branch: distortion
