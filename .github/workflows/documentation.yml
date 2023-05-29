@@ -12,6 +12,7 @@ jobs:
       - name: Install libpython
         run: |
           apt install libpython3.9-dev
+          conda install -c conda-forge mpi4py openmpi 
       - name: Install dependencies
         run: |
           pip install sphinx sphinx_rtd_theme
