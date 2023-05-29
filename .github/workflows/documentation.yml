@@ -10,7 +10,6 @@ jobs:
       - uses: actions/setup-python@v3
       - name: Install libpython
         run: |
-          apt install libpython3.9-dev
           conda install -c conda-forge mpi4py openmpi 
       - name: Install dependencies
         run: |
