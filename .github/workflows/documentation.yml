@@ -8,7 +8,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
-      - uses: kaifengZheng/sphinx-action@gh-pages
+      - uses: kaifengZheng/sphinx-action@master
       - name: Install dependencies
         run: |
           pip install sphinx sphinx_rtd_theme
