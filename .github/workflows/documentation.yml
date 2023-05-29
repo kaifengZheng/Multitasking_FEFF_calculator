@@ -8,7 +8,6 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
-      - uses: kaifengZheng/sphinx-action@master
       - name: Install libpython
         run: |
           apt install libpython3.9-dev
