@@ -387,7 +387,6 @@ def writing_process():
     with MPIExecutor() as pool:
         pool.workers_exit()
         jobs=list(tqdm(pool.submit(run_write,FEFF_obj[i]) for i in range(len(FEFF_obj))),total=num_obj)
-        pool.submit(FEFF_obj_fun,FEFF_obj[i]),for i in range(len(FEFF_obj))
     finish_time = time.time()
 #def call_back_FEFF(result):
     #print(result[0])
