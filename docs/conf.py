@@ -135,7 +135,7 @@ latex_documents = [
         master_doc,
         "spec_cal.tex",
         "Parallel spectra calculator Documentation",
-        "Kaifeng Zhenga",
+        "Kaifeng Zheng",
         "manual",
     ),
 ]
