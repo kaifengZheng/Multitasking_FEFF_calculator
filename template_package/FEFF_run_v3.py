@@ -52,7 +52,7 @@ mode = config['mode']
 cores = int(config['cores'])
 # average = config['average']
 file_type = config['file_type']
-symmetry= config['symmetry']
+# symmetry= config['symmetry']
 restart=config['restart']
 
 #SCF config
