@@ -39,7 +39,7 @@ args=parser.parse_args()
 
 config=toml.load("config.toml")
 template_dir = config['template_dir']
-pos_filename = config['pos_filename']
+# pos_filename = config['pos_filename']
 cutoff=config['cutoff']
 scratch = config['scratch']
 CA = config['CA']
