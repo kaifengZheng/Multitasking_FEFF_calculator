@@ -366,13 +366,13 @@ def writing_process():
         #else:
         #    shutil.rmtree("FEFF_inp")
         #    os.mkdir("FEFF_inp")
-        for i in range(len(readfiles)):
+        for i in tqdm(range(len(readfiles)),total=len(readfiles)):
             if particle=='atom':
                 if len(config['site'])==1:
                     iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][0],numbers=1)
                     run_write(iter)
                 else:
-                    for i in tqdm(range(len(config['site'])),total=len(config['site'])):
+                    for i in range(len(config['site'])):
                         iter=FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=config['site'][i],numbers=1)
                         run_write(iter)
             if particle=='particle':
