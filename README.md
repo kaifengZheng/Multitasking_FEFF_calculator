@@ -1,29 +1,29 @@
 # Parallel spectra calculator
 <a name="readme-top"></a>
 <p align="center">
-  <img width="1300" height="200" src="https://github.com/kaifengZheng/FEFF_package/assets/48105165/ccccd72e-1292-4875-8232-dc87a0f0967e">
+<img width="1300" height="200" src="https://github.com/kaifengZheng/FEFF_package/assets/48105165/ccccd72e-1292-4875-8232-dc87a0f0967e">
 </p>
 
 <!-- TABLE OF CONTENTS -->
 <details>
-  <summary>Table of Contents</summary>
-  <ol>
-    <li>
-      <a href="#about-the-project">About The Project</a>
-      <ul>
-        <li><a href="#Packages">Packages</a></li>
-        <li><a href="#Usage">Usage</a></li>
-      </ul>
-    </li>
-    <li>
-      <a href="#Workflow">Workflow</a>
-      <ul>
-        <li><a href="#writing process">Prerequisites</a></li>
-        <li><a href="#running process">Installation</a></li>
-      </ul>
-    </li>
-    <li><a href="#examples">examples</a></li>
-  </ol>
+<summary>Table of Contents</summary>
+<ol>
+<li>
+<a href="#about-the-project">About The Project</a>
+<ul>
+<li><a href="#Packages">Packages</a></li>
+<li><a href="#Usage">Usage</a></li>
+</ul>
+</li>
+<li>
+<a href="#Workflow">Workflow</a>
+<ul>
+<li><a href="#writing process">Prerequisites</a></li>
+<li><a href="#running process">Installation</a></li>
+</ul>
+</li>
+<li><a href="#examples">examples</a></li>
+</ol>
 </details>
 
 
