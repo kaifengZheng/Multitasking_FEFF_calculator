@@ -1,0 +1,319 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>&lt;no title&gt; &#8212; FEFF_package 0.1.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script src="_static/jquery.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script src="_static/sphinx_highlight.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Installation" href="installation.html" />
+    <link rel="prev" title="Welcome to FEFF_package’s documentation!" href="index.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <p># Parallel spectra calculator
+&lt;a name=”readme-top”&gt;&lt;/a&gt;
+&lt;p align=”center”&gt;
+&lt;img width=”1300” height=”200” src=”<a class="reference external" href="https://github.com/kaifengZheng/FEFF_package/assets/48105165/ccccd72e-1292-4875-8232-dc87a0f0967e">https://github.com/kaifengZheng/FEFF_package/assets/48105165/ccccd72e-1292-4875-8232-dc87a0f0967e</a>”&gt;
+&lt;/p&gt;</p>
+<p>&lt;!– TABLE OF CONTENTS –&gt;
+&lt;details&gt;
+&lt;summary&gt;Table of Contents&lt;/summary&gt;
+&lt;ol&gt;
+&lt;li&gt;
+&lt;a href=”#about-the-project”&gt;About The Project&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=”#Packages”&gt;Packages&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=”#Usage”&gt;Usage&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;
+&lt;a href=”#Workflow”&gt;Workflow&lt;/a&gt;
+&lt;ul&gt;
+&lt;li&gt;&lt;a href=”#writing process”&gt;Prerequisites&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=”#running process”&gt;Installation&lt;/a&gt;&lt;/li&gt;
+&lt;/ul&gt;
+&lt;/li&gt;
+&lt;li&gt;&lt;a href=”#examples”&gt;examples&lt;/a&gt;&lt;/li&gt;
+&lt;/ol&gt;
+&lt;/details&gt;</p>
+<p>&lt;!– ABOUT THE PROJECT –&gt;
+&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;
+## About The Project
+This package can be used to run multiple FEFF calculations in parallel, decreasing the amount of calculation time when one wants to run huge FEFF calculations. For instance, one may be interested in particle-averaged spectra for different shape particles. If those particles are irregular, most likely, every atom is inequivalent. Therefore, we need to calculate thousands or hundred thousand spectra. Using either the sequential or mpi version of FEFF is impossible to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles require 300 more days to finish it！Using this package will decrease the calculation time dramatically and will finish them within one week(use 3x96 core on cluster). &lt;br&gt;</p>
+<p>Why I design this package:
+* Decrease the calculation time ⏲️
+* Make the FEFF calculation easier ⚛️
+* Provide useful functions(average) 😸</p>
+<p>The functionality of the package:
+* run calculations(now only for FEFF) in parallel
+* can restart the calculations(now only for FEFF) from the checkpoint
+* allow coordinates as the input file
+* can use SCF to tune calculation(now only for FEFF) parameters
+* flexable modes for running the calculation
+* Only support linux system(parallel mode needs mpi support)
+* <cite>toolbox</cite> provides the average method</p>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>## Packages
+This section should list any major libraries and softwares used to bootstrap my project.
+&lt;br&gt;&lt;ins&gt;Spectra calculators:&lt;ins&gt;
+* FEFF <a class="reference external" href="https://feff.phys.washington.edu">https://feff.phys.washington.edu</a>/&lt;br&gt;</p>
+<p>&lt;ins&gt;Python packages:&lt;/ins&gt;&lt;br&gt;
+* numpy <a class="reference external" href="https://numpy.org/">https://numpy.org/</a>
+* pandas <a class="reference external" href="https://pandas.pydata.org/">https://pandas.pydata.org/</a>
+* Pymatgen <a class="reference external" href="https://pymatgen.org/">https://pymatgen.org/</a>
+* ASE <a class="reference external" href="https://wiki.fysik.dtu.dk/ase/">https://wiki.fysik.dtu.dk/ase/</a>
+* mpi4py <a class="reference external" href="https://mpi4py.readthedocs.io/en/stable/">https://mpi4py.readthedocs.io/en/stable/</a>
+* mpipool <a class="reference external" href="https://pypi.org/project/mpipool/">https://pypi.org/project/mpipool/</a></p>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>## Environment setting
+First, configure the correct mpi environment on your computer. You could check my configurations in the <cite>run.slurm</cite>. open <cite>module_file/FEFF/10.0.0</cite>, put your FEFF package path and mpi configurations in the following lines:
+<a href="#id1"><span class="problematic" id="id2">*</span></a>environment configuration</p>
+<blockquote>
+<div><dl class="simple">
+<dt><a href="#id3"><span class="problematic" id="id4">``</span></a><a href="#id5"><span class="problematic" id="id6">`</span></a>sh</dt><dd><p>set               root              [add FEFF dir here!]</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>if { ![ is-loaded intel/oneAPI/2022.2 ] }         { module load intel/oneAPI/2022.2 }
+if { ![ is-loaded mpi ] }         { module load mpi }
+if { ![ is-loaded mkl ] }         { module load mkl }
+<a href="#id7"><span class="problematic" id="id8">``</span></a>`
+Put the <cite>FEFF_files/feff</cite> and <cite>FEFF_files/feffmpi</cite> in the place you like, and change the <cite>PATH</cite> inside those files to the <cite>feff/bin</cite> path.&lt;br&gt;</p>
+<p>&lt;br&gt;make sure FEFF package is built on your system, and then go into <cite>module_file</cite>, and run:
+* module</p>
+<blockquote>
+<div><blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">`sh</span>
+<span class="pre">module</span> <span class="pre">use</span> <span class="pre">FEFF</span>
+<span class="pre">module</span> <span class="pre">load</span> <span class="pre">10.0.0</span>
+<span class="pre">`</span></code></p>
+</div></blockquote>
+<p>It will enable the FEFF10 calculator, and then you can run FEFF simply by click:
+* run FEFF
+<code class="docutils literal notranslate"><span class="pre">`sh</span>
+<span class="pre">feff</span> <span class="pre">#for</span> <span class="pre">sequential</span> <span class="pre">FEFF</span>
+<span class="pre">feffmpi</span> <span class="pre">8</span> <span class="pre">#for</span> <span class="pre">mpi</span> <span class="pre">feff</span> <span class="pre">running</span> <span class="pre">on</span> <span class="pre">8</span> <span class="pre">cpus</span>
+<span class="pre">`</span></code></p>
+</div></blockquote>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>## Configuration file
+The configurations of the calculation stores in toml format. Please check [Documentation](<a class="reference external" href="https://kaifengzheng.github.io/FEFF_package/">https://kaifengzheng.github.io/FEFF_package/</a>)
+&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>## Run
+Create a new diractory and clone the whole package into it. The main program is <cite>FEFF_run_v3.py</cite>. This code will treat writing and running as sperate processes.&lt;br&gt;
+For writing process, one needs to prepare <cite>input</cite> directory to store all coordinates files(xyz,cif,POSCAR),confiugration file: <cite>config.toml</cite>. and template file:<cite>template.inp</cite>. Running by use:</p>
+<blockquote>
+<div><p><code class="docutils literal notranslate"><span class="pre">`sh</span>
+<span class="pre">mpirun</span> <span class="pre">-np</span> <span class="pre">[number</span> <span class="pre">of</span> <span class="pre">cores]</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">mpi4py</span> <span class="pre">FEFF_run_v3.py</span> <span class="pre">-w</span>
+<span class="pre">`</span></code></p>
+</div></blockquote>
+<dl class="simple">
+<dt>For running process, one needs <cite>config.toml</cite>, ‘FEFF_inp’ directory(which generated by writing process),`template.inp`. Running by use:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">`sh</span>
+<span class="pre">mpirun</span> <span class="pre">-np</span> <span class="pre">[number</span> <span class="pre">of</span> <span class="pre">cores]</span> <span class="pre">python</span> <span class="pre">-m</span> <span class="pre">mpi4py</span> <span class="pre">FEFF_run_v3.py</span> <span class="pre">-r</span>
+<span class="pre">`</span></code></p>
+</dd>
+</dl>
+<p>&lt;!– WORKFLOW –&gt;</p>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>## Workflow</p>
+<dl class="simple">
+<dt>&lt;p align=”center”&gt;</dt><dd><p>&lt;img width=”1300” height=”800” src=”<a class="reference external" href="https://github.com/kaifengZheng/FEFF_package/assets/48105165/cc5cda6e-a2bb-4c6d-928e-06a6859f948c">https://github.com/kaifengZheng/FEFF_package/assets/48105165/cc5cda6e-a2bb-4c6d-928e-06a6859f948c</a>”&gt;</p>
+</dd>
+</dl>
+<p>&lt;/p&gt;</p>
+<p>### Prerequisites</p>
+<dl class="simple">
+<dt>People can install all the dependency using:</dt><dd><p><code class="docutils literal notranslate"><span class="pre">`sh</span>
+<span class="pre">pip</span> <span class="pre">install</span> <span class="pre">-r</span> <span class="pre">requirements.txt</span>
+<span class="pre">`</span></code></p>
+</dd>
+</dl>
+<p>&lt;!– USAGE EXAMPLES –&gt;</p>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>## Examples</p>
+<p>Some cif examples are stored in <cite>cif_input_samples</cite>, and xyz examples are stored in <cite>input</cite>.&lt;br&gt;</p>
+<p>_For more examples, please refer to the [Documentation]()</p>
+<p>&lt;!– ROADMAP –&gt;
+## Roadmap</p>
+<ul class="simple">
+<li><p>[x] Add Changelog</p></li>
+<li><p>[x] Add back to top links</p></li>
+<li><p>[ ] Add Additional Templates w/ Examples</p></li>
+<li><p>[ ] Add “components” document to easily copy &amp; paste sections of the readme</p></li>
+<li><dl class="simple">
+<dt>[ ] Multi-language Support</dt><dd><ul>
+<li><p>[ ] Chinese</p></li>
+<li><p>[ ] Spanish</p></li>
+</ul>
+</dd>
+</dl>
+</li>
+</ul>
+<p>See the [open issues](<a class="reference external" href="https://github.com/othneildrew/Best-README-Template/issues">https://github.com/othneildrew/Best-README-Template/issues</a>) for a full list of proposed features (and known issues).</p>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>&lt;!– CONTRIBUTING –&gt;
+## Contributing</p>
+<p>Contributions are what make the open source community such an amazing place to learn, inspire, and create. Any contributions you make are <strong>greatly appreciated</strong>.</p>
+<p>If you have a suggestion that would make this better, please fork the repo and create a pull request. You can also simply open an issue with the tag “enhancement”.
+Don’t forget to give the project a star! Thanks again!</p>
+<ol class="arabic simple">
+<li><p>Fork the Project</p></li>
+<li><p>Create your Feature Branch (<cite>git checkout -b feature/AmazingFeature</cite>)</p></li>
+<li><p>Commit your Changes (<cite>git commit -m ‘Add some AmazingFeature’</cite>)</p></li>
+<li><p>Push to the Branch (<cite>git push origin feature/AmazingFeature</cite>)</p></li>
+<li><p>Open a Pull Request</p></li>
+</ol>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>&lt;!– LICENSE –&gt;
+## License</p>
+<p>Distributed under the MIT License. See <cite>LICENSE.txt</cite> for more information.</p>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>&lt;!– CONTACT –&gt;
+## Contact</p>
+<p>Kaifeng Zheng - <a class="reference external" href="mailto:kaifeng&#46;zheng&#37;&#52;&#48;stonybrook&#46;edu">kaifeng<span>&#46;</span>zheng<span>&#64;</span>stonybrook<span>&#46;</span>edu</a></p>
+<p>Project Link: [<a class="reference external" href="https://github.com/kaifengZheng/FEFF_package.git](https://github.com/kaifengZheng/FEFF_package.git">https://github.com/kaifengZheng/FEFF_package.git](https://github.com/kaifengZheng/FEFF_package.git</a>)</p>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>&lt;!– ACKNOWLEDGMENTS –&gt;
+## Acknowledgments</p>
+<p>Use this space to list resources you find helpful and would like to give credit to. I’ve included a few of my favorites to kick things off!</p>
+<ul class="simple">
+<li><p>[Choose an Open Source License](<a class="reference external" href="https://choosealicense.com">https://choosealicense.com</a>)</p></li>
+<li><p>[GitHub Emoji Cheat Sheet](<a class="reference external" href="https://www.webpagefx.com/tools/emoji-cheat-sheet">https://www.webpagefx.com/tools/emoji-cheat-sheet</a>)</p></li>
+<li><p>[Malven’s Flexbox Cheatsheet](<a class="reference external" href="https://flexbox.malven.co/">https://flexbox.malven.co/</a>)</p></li>
+<li><p>[Malven’s Grid Cheatsheet](<a class="reference external" href="https://grid.malven.co/">https://grid.malven.co/</a>)</p></li>
+<li><p>[Img Shields](<a class="reference external" href="https://shields.io">https://shields.io</a>)</p></li>
+<li><p>[GitHub Pages](<a class="reference external" href="https://pages.github.com">https://pages.github.com</a>)</p></li>
+<li><p>[Font Awesome](<a class="reference external" href="https://fontawesome.com">https://fontawesome.com</a>)</p></li>
+<li><p>[React Icons](<a class="reference external" href="https://react-icons.github.io/react-icons/search">https://react-icons.github.io/react-icons/search</a>)</p></li>
+</ul>
+<p>&lt;p align=”right”&gt;(&lt;a href=”#readme-top”&gt;back to top&lt;/a&gt;)&lt;/p&gt;</p>
+<p>&lt;!– MARKDOWN LINKS &amp; IMAGES –&gt;
+&lt;!– <a class="reference external" href="https://www.markdownguide.org/basic-syntax/#reference-style-links">https://www.markdownguide.org/basic-syntax/#reference-style-links</a> –&gt;
+[contributors-shield]: <a class="reference external" href="https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge">https://img.shields.io/github/contributors/othneildrew/Best-README-Template.svg?style=for-the-badge</a>
+[contributors-url]: <a class="reference external" href="https://github.com/othneildrew/Best-README-Template/graphs/contributors">https://github.com/othneildrew/Best-README-Template/graphs/contributors</a>
+[forks-shield]: <a class="reference external" href="https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge">https://img.shields.io/github/forks/othneildrew/Best-README-Template.svg?style=for-the-badge</a>
+[forks-url]: <a class="reference external" href="https://github.com/othneildrew/Best-README-Template/network/members">https://github.com/othneildrew/Best-README-Template/network/members</a>
+[stars-shield]: <a class="reference external" href="https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=for-the-badge">https://img.shields.io/github/stars/othneildrew/Best-README-Template.svg?style=for-the-badge</a>
+[stars-url]: <a class="reference external" href="https://github.com/othneildrew/Best-README-Template/stargazers">https://github.com/othneildrew/Best-README-Template/stargazers</a>
+[issues-shield]: <a class="reference external" href="https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge">https://img.shields.io/github/issues/othneildrew/Best-README-Template.svg?style=for-the-badge</a>
+[issues-url]: <a class="reference external" href="https://github.com/othneildrew/Best-README-Template/issues">https://github.com/othneildrew/Best-README-Template/issues</a>
+[license-shield]: <a class="reference external" href="https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge">https://img.shields.io/github/license/othneildrew/Best-README-Template.svg?style=for-the-badge</a>
+[license-url]: <a class="reference external" href="https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt">https://github.com/othneildrew/Best-README-Template/blob/master/LICENSE.txt</a>
+[linkedin-shield]: <a class="reference external" href="https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&amp;logo=linkedin&amp;colorB=555">https://img.shields.io/badge/-LinkedIn-black.svg?style=for-the-badge&amp;logo=linkedin&amp;colorB=555</a>
+[linkedin-url]: <a class="reference external" href="https://linkedin.com/in/othneildrew">https://linkedin.com/in/othneildrew</a>
+[product-screenshot]: images/screenshot.png
+[Next.js]: <a class="reference external" href="https://img.shields.io/badge/next.js-000000?style=for-the-badge&amp;logo=nextdotjs&amp;logoColor=white">https://img.shields.io/badge/next.js-000000?style=for-the-badge&amp;logo=nextdotjs&amp;logoColor=white</a>
+[Next-url]: <a class="reference external" href="https://nextjs.org/">https://nextjs.org/</a>
+[React.js]: <a class="reference external" href="https://img.shields.io/badge/React-20232A?style=for-the-badge&amp;logo=react&amp;logoColor=61DAFB">https://img.shields.io/badge/React-20232A?style=for-the-badge&amp;logo=react&amp;logoColor=61DAFB</a>
+[React-url]: <a class="reference external" href="https://reactjs.org/">https://reactjs.org/</a>
+[Vue.js]: <a class="reference external" href="https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&amp;logo=vuedotjs&amp;logoColor=4FC08D">https://img.shields.io/badge/Vue.js-35495E?style=for-the-badge&amp;logo=vuedotjs&amp;logoColor=4FC08D</a>
+[Vue-url]: <a class="reference external" href="https://vuejs.org/">https://vuejs.org/</a>
+[Angular.io]: <a class="reference external" href="https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&amp;logo=angular&amp;logoColor=white">https://img.shields.io/badge/Angular-DD0031?style=for-the-badge&amp;logo=angular&amp;logoColor=white</a>
+[Angular-url]: <a class="reference external" href="https://angular.io/">https://angular.io/</a>
+[Svelte.dev]: <a class="reference external" href="https://img.shields.io/badge/Svelte-4A4A55?style=for-the-badge&amp;logo=svelte&amp;logoColor=FF3E00">https://img.shields.io/badge/Svelte-4A4A55?style=for-the-badge&amp;logo=svelte&amp;logoColor=FF3E00</a>
+[Svelte-url]: <a class="reference external" href="https://svelte.dev/">https://svelte.dev/</a>
+[Laravel.com]: <a class="reference external" href="https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&amp;logo=laravel&amp;logoColor=white">https://img.shields.io/badge/Laravel-FF2D20?style=for-the-badge&amp;logo=laravel&amp;logoColor=white</a>
+[Laravel-url]: <a class="reference external" href="https://laravel.com">https://laravel.com</a>
+[Bootstrap.com]: <a class="reference external" href="https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&amp;logo=bootstrap&amp;logoColor=white">https://img.shields.io/badge/Bootstrap-563D7C?style=for-the-badge&amp;logo=bootstrap&amp;logoColor=white</a>
+[Bootstrap-url]: <a class="reference external" href="https://getbootstrap.com">https://getbootstrap.com</a>
+[JQuery.com]: <a class="reference external" href="https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&amp;logo=jquery&amp;logoColor=white">https://img.shields.io/badge/jQuery-0769AD?style=for-the-badge&amp;logo=jquery&amp;logoColor=white</a>
+[JQuery-url]: <a class="reference external" href="https://jquery.com">https://jquery.com</a></p>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<h1 class="logo"><a href="index.html">FEFF_package</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="installation.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="usage.html">Usage</a></li>
+<li class="toctree-l1"><a class="reference internal" href="contributing.html">Contributing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="authors.html">Credits</a></li>
+<li class="toctree-l1"><a class="reference internal" href="history.html">History</a></li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="index.html" title="previous chapter">Welcome to FEFF_package’s documentation!</a></li>
+      <li>Next: <a href="installation.html" title="next chapter">Installation</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2023, Kaifeng Zheng.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 6.2.1</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.13</a>
+      
+      |
+      <a href="_sources/readme.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
