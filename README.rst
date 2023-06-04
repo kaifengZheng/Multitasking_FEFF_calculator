@@ -44,15 +44,21 @@ Parallel spectra calculator
 
    <!-- ABOUT THE PROJECT -->
    <p align="right">(<a href="#readme-top">back to top</a>)</p>
-   ## About The Project
-   This package can be used to run multiple FEFF calculations in parallel, decreasing the amount of calculation time when one wants to run huge FEFF calculations. For instance, one may be interested in particle-averaged spectra for different shape particles. If those particles are irregular, most likely, every atom is inequivalent. Therefore, we need to calculate thousands or hundred thousand spectra. Using either the sequential or mpi version of FEFF is impossible to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles require 300 more days to finish it！Using this package will decrease the calculation time dramatically and will finish them within one week(use 3x96 core on cluster). <br>
+   
+   About The Project
+   -----------------
+   
+   This package can be used to run multiple FEFF calculations in parallel, decreasing the amount of calculation time when one wants to run huge FEFF calculations. For instance, one may be interested in particle-averaged spectra for different shape particles. If those particles are irregular, most likely, every atom is inequivalent. Therefore, we need to calculate thousands or hundred thousand spectra. Using either the sequential or mpi version of FEFF is impossible to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles require 300 more days to finish it！Using this package will decrease the calculation time dramatically and will finish them within one week(use 3x96 core on cluster). 
+  
 
    Why I design this package:
+   
    * Decrease the calculation time ⏲️
    * Make the FEFF calculation easier ⚛️
    * Provide useful functions(average) 😸
 
    The functionality of the package:
+   
    * run calculations(now only for FEFF) in parallel
    * can restart the calculations(now only for FEFF) from the checkpoint
    * allow coordinates as the input file
@@ -63,12 +69,16 @@ Parallel spectra calculator
 
    <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-   ## Packages
+   Packages
+   --------
+   
    This section should list any major libraries and softwares used to bootstrap my project. 
    <br><ins>Spectra calculators:<ins>
+   
    * FEFF https://feff.phys.washington.edu/<br>
 
    <ins>Python packages:</ins><br>
+   
    * numpy https://numpy.org/
    * pandas https://pandas.pydata.org/
    * Pymatgen https://pymatgen.org/
@@ -78,7 +88,9 @@ Parallel spectra calculator
 
    <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-   ## Environment setting
+   Environment setting
+   -------------------
+   
    First, configure the correct mpi environment on your computer. You could check my configurations in the `run.slurm`. open `module_file/FEFF/10.0.0`, put your FEFF package path and mpi configurations in the following lines:
    *environment configuration
     ```sh
@@ -89,9 +101,10 @@ Parallel spectra calculator
    if { ![ is-loaded mpi ] }         { module load mpi }
    if { ![ is-loaded mkl ] }         { module load mkl }
    ```
-   Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and change the `PATH` inside those files to the `feff/bin` path.<br>
+   Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and change the `PATH` inside those files to the `feff/bin` path.
 
-   <br>make sure FEFF package is built on your system, and then go into `module_file`, and run:
+   make sure FEFF package is built on your system, and then go into `module_file`, and run:
+   
    * module
      ```sh
      module use FEFF
@@ -100,6 +113,7 @@ Parallel spectra calculator
 
 
     It will enable the FEFF10 calculator, and then you can run FEFF simply by click:
+    
     * run FEFF
     ```sh
     feff #for sequential FEFF
@@ -107,11 +121,15 @@ Parallel spectra calculator
     ```
    <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-   ## Configuration file
+   Configuration file
+   ------------------
+   
    The configurations of the calculation stores in toml format. Please check [Documentation]()
    <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-   ## Run
+   Run
+   ---
+   
    Create a new diractory and clone the whole package into it. The main program is `FEFF_run_v3.py`. This code will treat writing and running as sperate processes.<br>
    For writing process, one needs to prepare `input` directory to store all coordinates files(xyz,cif,POSCAR),confiugration file: `config.toml`. and template file:`template.inp`. Running by use:
      ```sh
