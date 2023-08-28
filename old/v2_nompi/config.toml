@@ -1,0 +1,16 @@
+template_dir = "template.inp"
+name='reg_part'
+#scratch = "/gpfs/scratch/kaifzheng/FEFF"
+scratch = "/gpfs/scratch/kaifzheng/FEFF"
+CA = "Pt"
+radius = 100
+mode = "seq_multi"
+cores = 1
+tasks = 96
+site = [0]
+pos_filename = ""
+average = true
+file_type="*.xyz"
+symmetry=true
+restart=false
+#site_rule="site=int(readfiles[i].split('.')[0].split('site_')[1])"

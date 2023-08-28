@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 #rm -rf /gpfs/scratch/kaifzheng/FEFF/*
-rm -r out*
+rm output.log
 rm array*
-rm -r FEFF_inp
-sbatch run.slurm
+sbatch run.slurm 
