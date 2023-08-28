@@ -18,6 +18,6 @@ module load 10.0.0
 
 ##module load gnu-parallel
 
-python run_FEFF.py -w
+mpirun -n 4 python run_FEFF.py -w
 wait
-python run_FEFF.py -r
+mpirun -n 4 python run_FEFF.py -r

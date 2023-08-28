@@ -60,7 +60,7 @@ keys=list(output.keys())
 print("\nremeshing energy grids.../n")
 energy=np.array(Energy,dtype=float)
 minE,maxE=np.max(energy[:,0]),np.min(energy[:,-1])
-grids=np.linspace(minE,maxE,1000)
+grids=np.linspace(minE,maxE,100)
 for key in tqdm(output.keys()):
     for i in range(len(output[key])):
         output[key][i]['mu']=interp1d(output[key][i]['E'],output[key][i]['mu'])(grids)
