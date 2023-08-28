@@ -94,7 +94,7 @@ Put the `FEFF_files/feff` and `FEFF_files/feffmpi` in the place you like, and ch
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Configuration file
-The configurations of the calculation stores in toml format. Please check [Documentation]()
+The configurations of the calculation stores in toml format. Please check [Documentation](https://kaifengzheng.github.io/FEFF_package/)
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## Run
