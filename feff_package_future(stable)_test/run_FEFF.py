@@ -12,6 +12,7 @@ from pymatgen.io.ase import AseAtomsAdaptor
 import numpy as np
 from tabulate import tabulate
 from scipy.spatial import distance_matrix
+from scipy.spatial.distance import cdist
 import toml
 import tomli as tomllib
 import os
@@ -19,32 +20,12 @@ import argparse
 import json
 from tqdm import tqdm
 
-parser=argparse.ArgumentParser(description="calculation configuration")
-parser.add_argument('-w','--write_file',action='store_true',help='write FEFF input file')
-parser.add_argument('-r','--run_file',action='store_true',help='run FEFF calculation')
-args=parser.parse_args()
-config=toml.load("config.toml")
-template_dir = config['template_dir']
-pos_filename = config['pos_filename']
-scratch = config['scratch']
-CA = config['CA']
-radius = config['radius']
-if len(config['site'])==1:
-    site = config['site'][0]
-else:
-    site = config['site']
-mode = config['mode']
-cores = int(config['cores'])
-tasks = int(config['tasks'])
-average = config['average']
-file_type = config['file_type']
-symmetry= config['symmetry']
-restart=config['restart']
+
 #site_rule = config['site_rule']
 
 ######################HELP FUNCTIONS######################
 
-def write_FEFFinp(template_dir,pos_filename,CA,site,radius,numbers=0):
+def write_FEFFinp(template_dir,pos_filename,CA,site,ipot_dist,radius,numbers=0):
     with open(template_dir) as f:
         template = f.readlines()
     str_title=pos_filename.split('.')[0].split('/')[-1]
@@ -60,14 +41,20 @@ def write_FEFFinp(template_dir,pos_filename,CA,site,radius,numbers=0):
         f.write('\n\n')
         f.write("POTENTIALS\n")
         f.write("* ipot \t Z \t element \t l_scmt \t l_fms \t stoichiometry\n")
-        f.write(calc_pot_atoms_list(pos_filename, CA,radius)[site]["potential"])
+        f.write(calc_pot_atoms_list(pos_filename, absorber=CA,absorber_list=[site],ipot_dist=ipot_dist,cluster_size=radius)[0]["potential"])
         f.write('\n\n')
         f.write("ATOMS\n")
-        f.write(calc_pot_atoms_list(pos_filename, CA,radius)[site]["atoms"])
+        f.write(calc_pot_atoms_list(pos_filename, absorber=CA,absorber_list=[site],ipot_dist=ipot_dist,cluster_size=radius)[0]["atoms"])
         f.write('\n')
         f.write("END\n")
     return f"FEFF_inp/{title}.inp",title
-
+def cluster_to_numpy(clusters):
+    cluster_list=[]
+    ele=[]
+    for cluster in clusters:
+        cluster_list.append([np.float32(cluster[0]),np.float32(cluster[1]),np.float32(cluster[2])])
+        ele.append(Element(cluster[4]))
+    return np.array(cluster_list),ele
 def neighbor_list(structure,absorber_index,ipot_dist=4.5,cluster_size=10):
     clusters=pymatgen.io.feff.inputs.Atoms(structure, int(absorber_index), cluster_size).get_lines()
     cluster_list,ele_list=cluster_to_numpy(clusters)
@@ -95,7 +82,7 @@ def neighbor_list(structure,absorber_index,ipot_dist=4.5,cluster_size=10):
     return neighbor_rewrite
 
 
-def calc_pot_atoms_list(path, absorber = None, absorber_list = [], ipot_dist = 4.5, cluster_size = 10):
+def calc_pot_atoms_list(path, absorber: str = None, absorber_list = [], ipot_dist = 4.5, cluster_size = 10):
     """
     Calculate the POTENTIAL and ATOMS card of feff input of given structure.
     """
@@ -107,66 +94,73 @@ def calc_pot_atoms_list(path, absorber = None, absorber_list = [], ipot_dist = 4
     pot_atoms_list = []
     
     if len(absorber_list) == 0:
+        absorber_species = Element(absorber)
+        absorber_list = np.where(np.array(structure.species) == absorber_species)[0]
         if absorber is None:
             raise ValueError("Please specify the absorber element.")
         
     
     for ii in range(len(absorber_list)):
-            clusters=np.array(pymatgen.io.feff.inputs.Atoms(structure, int(absorber_list[ii]), cluster_size).get_lines())
-            clusters = clusters[np.argsort(clusters[:, 5].astype(float))]
-            cluster_list,ele_list=cluster_to_numpy(clusters)
-            neighbor_dict=neighbor_list(structure,absorber_list[ii],ipot_dist,cluster_size)
-            
-            elements=structure.elements
-            num_ele_total=len(elements)
-            species=structure.species
-            central_element = species[absorber_list[ii]]
-            ipotrow = [[0,central_element.Z,central_element.symbol,-1,-1,1,0]]
-            pot_num=1
-            # pot_dict=dict()
-            num_atom=0
-            for i in range(num_ele_total):
-                num_ele_shell=0
-                ele1=np.where(np.array(ele_list)==elements[i])[0]
+        #convert structure to a cluster within a radius
+        clusters=np.array(pymatgen.io.feff.inputs.Atoms(structure, int(absorber_list[ii]), cluster_size).get_lines())
+        clusters = clusters[np.argsort(clusters[:, 5].astype(float))]
+        #get element list and coordinates
+        cluster_list,ele_list=cluster_to_numpy(clusters)
+        #get neighbors of first shell atoms and catogrize them by coordination numbers
+        #print(absorber_list[ii])
+        neighbor_dict=neighbor_list(structure,absorber_list[ii],ipot_dist,cluster_size)
+        #write POTENTIAL card for absorber
+        elements=structure.elements
+        num_ele_total=len(elements) #number of different elements in the cluster
+        species=structure.species# list of species in the cluster
+        central_element = species[absorber_list[ii]]
+        ipotrow = [[0,central_element.Z,central_element.symbol,-1,-1,1,0]]
+        pot_num=1 #count different potentials
+        # pot_dict=dict()
+        num_atom=0 #count atoms the final number should be equal to number of atoms in the cluster.
+        for i in range(num_ele_total):
+            num_ele_shell=0 #count the number of atoms of specific element in the cluster
+            ele1=np.where(np.array(ele_list)==elements[i])[0] #index of specific element in the cluster
+            #if the central atom is the same as the element of absorber, delete it from the list
+            if elements[i]==central_element:
                 ele1=np.delete(ele1,np.where(ele1==0))
-                num_ele=len(np.where(np.array(ele_list)==elements[i])[0])-1#number of one kind of element
-                atom_list=[]
-                for k in range(len(neighbor_dict[elements[i]])):
-                    ipotrow.append([pot_num,elements[i].Z,elements[i].symbol,-1,-1,len(neighbor_dict[elements[i]][k]),0])
-                    for j in range(len(neighbor_dict[elements[i]][k])):
-                        clusters[neighbor_dict[elements[i]][k][j]][3]=str(pot_num)
-                        atom_list.append(neighbor_dict[elements[i]][k][j])
-                    # pot_dict[neighbor_dict[elements[i]][k][j]]=pot_num
-                    num_ele_shell+=len(neighbor_dict[elements[i]][k])
-                    pot_num+=1
-                num_atom+=num_ele_shell
-                residual=[item for item in range(len(ele1)) if item not in atom_list]
-                if num_ele-num_ele_shell>0:
-                    ipotrow.append([pot_num,elements[i].Z,elements[i].symbol,-1,-1,num_ele-num_ele_shell,0])
-                    for j in range(len(residual)):
-                        clusters[num_ele_shell+j-1][3]=str(pot_num)
-                        # pot_dict[num_atom+j]=pot_num
-                    pot_num+=1
-            unique_potential=np.unique(clusters[:,3])
-            map_potential = {unique_potential[i]: str(i) for i in range(len(unique_potential))}
-            pot_index=list(np.array(ipotrow)[:,0]) 
-            if len(map_potential)!=len(ipotrow):
-                    miss_pot=set(pot_index).difference(list(map_potential.keys()))
-                    raise ValueError(f"The radius is too short to include all potentials, please choose a larger radius(missing potential {miss_pot}).")
-            pot_atoms_list.append({"potential": tabulate(ipotrow, tablefmt="plain"), "atoms": tabulate(cluster, tablefmt="plain")})
-        
-    return pot_atoms_list
+            
+            num_ele=len(np.where(np.array(ele_list)==elements[i])[0])-1#number of one kind of element
+            atom_list=[]#flatten the list of catogrized atoms for this element
+
+            #write POTENTIAL card and ATOMS card for the element
+            for k in range(len(neighbor_dict[elements[i]])):
+                #write POTENTIAL card
+            
+                ipotrow.append([pot_num,elements[i].Z,elements[i].symbol,-1,-1,len(neighbor_dict[elements[i]][k]),0])
+                
+                #write ATOMS card with the corresponding potential number
+                for j in range(len(neighbor_dict[elements[i]][k])):
+                    #elements[i]: element symbol,k: catagories of atoms(by CN), j: index of atom
+                    
+                    clusters[neighbor_dict[elements[i]][k][j]][3]=str(pot_num)
+                    atom_list.append(neighbor_dict[elements[i]][k][j])
+                # pot_dict[neighbor_dict[elements[i]][k][j]]=pot_num
+                num_ele_shell+=len(neighbor_dict[elements[i]][k])
+                pot_num+=1
+            num_atom+=num_ele_shell
+            residual=[item for item in range(len(ele1)) if item not in atom_list]
+            if num_ele-num_ele_shell>0:
+                ipotrow.append([pot_num,elements[i].Z,elements[i].symbol,-1,-1,num_ele-num_ele_shell,0])
+                for j in range(1,len(residual)+1):
+                    clusters[num_ele_shell+j][3]=str(pot_num)
+                    # pot_dict[num_atom+j]=pot_num
+                pot_num+=1
+        unique_potential=np.unique(clusters[:,3])
+        map_potential = {unique_potential[i]: str(i) for i in range(len(unique_potential))}
+        pot_index=list(np.array(ipotrow)[:,0])
+        #print(clusters)
+        #if len(map_potential)!=len(ipotrow):
+        #        miss_pot=set(pot_index).difference(list(map_potential.keys()))
+        #        raise ValueError(f"The radius is too short to include all potentials, please choose a larger radius(missing potential {miss_pot}).")
+        pot_atoms_list.append({"potential": tabulate(ipotrow, tablefmt="plain"), "atoms": tabulate(clusters, tablefmt="plain")})
     
-def cluster_to_numpy(clusters):
-    cluster_list=[]
-    ele=[]
-    for cluster in clusters:
-        cluster_list.append([np.float32(cluster[0]),np.float32(cluster[1]),np.float32(cluster[2])])
-        ele.append(Element(cluster[4]))
-    return np.array(cluster_list),ele
-
-
-
+    return pot_atoms_list
 
 def equ_sites(CA:str,labels,natoms,positions,cutoff,randomness=4):
     """
@@ -237,7 +231,7 @@ def write_outlog(content):
 
 
 class FEFF_cal:
-    def __init__(self,template_dir,pos_filename,scratch,CA,radius,site=0,numbers=0):
+    def __init__(self,template_dir,pos_filename,scratch,CA,ipot_dist=4.5,radius=10,site=0,numbers=0):
         self.template_dir=template_dir
         self.pos_filename=pos_filename
         self.CA=CA
@@ -247,13 +241,14 @@ class FEFF_cal:
         self.cores=cores
         self.site=site
         self.numbers=numbers
+        self.ipot_dist=ipot_dist
         self.title=pos_filename.split('.')[0].split('/')[1]
         self.inp_file="FEFF_inp/"+self.title+'.inp'
         self.mpi_cmd=f"mpirun -np {cores}"
         self.seq_cmd=str()
 
     def FEFFinp_gen(self):
-        self.inp_file,self.title=write_FEFFinp(self.template_dir,self.pos_filename,self.CA,self.site,self.radius,self.numbers)
+        self.inp_file,self.title=write_FEFFinp(self.template_dir,self.pos_filename,self.CA,self.site,ipot_dist=self.ipot_dist,radius=self.radius,numbers=self.numbers)
         #print(f"writing {self.title}")
     def particle_run(self):
 
@@ -339,17 +334,24 @@ def main():
             if symmetry:
                 unique_index,numbers = equ_sites_pointgroup(readfiles[i])
                 for j in range(len(unique_index)):
-                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=unique_index[j],numbers=numbers[j]))
+                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,ipot_dist=ipot_dist,radius=radius,site=unique_index[j],numbers=numbers[j]))
                     #FEFF_obj[i].FEFFinp_gen(unique_index[j],numbers)
             else:
+                try:
+                    site=int(readfiles[i].split('.')[0].split('site_')[1])
+                    FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,ipot_dist=ipot_dist,radius=radius,site=site,numbers=0))
                 ################################################
-                site=int(readfiles[i].split('.')[0].split('site_')[1])
-                FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=0))
+                # if there is no site number in the file name, read site in site list
+                except:
+                    for j in range(len(site)):
+                        FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,ipot_dist=ipot_dist,radius=radius,site=site[j],numbers=0))
+                
                 #exec(site_rule) #different site rule
                 # #FEFF_obj.FEFFinp_gen(site)
                 # ############################################### 
         start_time = time.time()
         num_obj=len(FEFF_obj)
+        
         with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
             jobs=list(tqdm(executor.map(run_write,FEFF_obj),total=num_obj))
             finish_time = time.time() 
@@ -367,7 +369,7 @@ def main():
             site=int(readfiles[i].split('.')[0].split('site_')[1].split('_n')[0])
             numbers=int(readfiles[i].split('.')[0].split('n_')[1])
             #print(numbers)
-            FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,radius,site=site,numbers=numbers))
+            FEFF_obj.append(FEFF_cal(template_dir,readfiles[i],scratch,CA,ipot_dist=ipot_dist,radius=radius,site=site,numbers=numbers))
         if mode=='seq_multi':
             start_time = time.time() 
             with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
@@ -430,7 +432,7 @@ def main():
             site=int(input[i].split('.')[0].split('site_')[1].split('_n')[0])
             numbers=int(input[i].split('.')[0].split('n_')[1])
             #print(numbers)
-            FEFF_obj.append(FEFF_cal(template_dir,input[i],scratch,CA,radius,site=site,numbers=numbers))
+            FEFF_obj.append(FEFF_cal(template_dir,input[i],scratch,CA,ipot_dist=ipot_dist,radius=radius,site=site,numbers=numbers))
         if mode=='seq_multi':
             start_time = time.time() 
             with confu.ProcessPoolExecutor(max_workers=tasks) as executor:
@@ -471,6 +473,28 @@ def main():
 
 
 if __name__ == '__main__':
+    parser=argparse.ArgumentParser(description="calculation configuration")
+    parser.add_argument('-w','--write_file',action='store_true',help='write FEFF input file')
+    parser.add_argument('-r','--run_file',action='store_true',help='run FEFF calculation')
+    args=parser.parse_args()
+    config=toml.load("config.toml")
+    template_dir = config['template_dir']
+    pos_filename = config['pos_filename']
+    scratch = config['scratch']
+    CA = config['CA']
+    ipot_dist = config['ipot_dist']
+    radius = config['radius']
+    if len(config['site'])==1:
+        site = config['site'][0]
+    else:
+        site = config['site']
+    mode = config['mode']
+    cores = int(config['cores'])
+    tasks = int(config['tasks'])
+    average = config['average']
+    file_type = config['file_type']
+    symmetry= config['symmetry']
+    restart=config['restart']
     main()
 
 
