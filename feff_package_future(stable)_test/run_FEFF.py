@@ -68,8 +68,34 @@ def write_FEFFinp(template_dir,pos_filename,CA,site,radius,numbers=0):
         f.write("END\n")
     return f"FEFF_inp/{title}.inp",title
 
+def neighbor_list(structure,absorber_index,ipot_dist=4.5,cluster_size=10):
+    clusters=pymatgen.io.feff.inputs.Atoms(structure, int(absorber_index), cluster_size).get_lines()
+    cluster_list,ele_list=cluster_to_numpy(clusters)
+    neighbors=np.where(cdist([cluster_list[0]],cluster_list)[0]<ipot_dist)[0]
+    neighbors=np.delete(neighbors,np.where(neighbors==0))
+    neighbor_dict=dict()
+    for i in range(len(neighbors)):
+        key=len(np.where(cdist([cluster_list[i]],cluster_list)[0]<ipot_dist)[0])
+        if key not in neighbor_dict:
+            neighbor_dict[key]={ele_list[i]:[neighbors[i]]}
+        else:
+            if ele_list[i] not in list(neighbor_dict[key].keys()):
+                neighbor_dict[key][ele_list[i]]=[neighbors[i]]
+            else:
+                neighbor_dict[key][ele_list[i]].append(neighbors[i])
+    neighbor_rewrite=dict()
 
-def calc_pot_atoms_list(path, absorber = None, radius = 8, absorber_list = []):
+    for key in list(neighbor_dict.keys()):
+        for species in list(neighbor_dict[key].keys()):
+            if species not in list(neighbor_rewrite.keys()):
+                neighbor_rewrite[species]=[np.array(neighbor_dict[key][species])]
+            else:
+                neighbor_rewrite[species].append(np.array(neighbor_dict[key][species]))
+        
+    return neighbor_rewrite
+
+
+def calc_pot_atoms_list(path, absorber = None, absorber_list = [], ipot_dist = 4.5, cluster_size = 10):
     """
     Calculate the POTENTIAL and ATOMS card of feff input of given structure.
     """
@@ -84,40 +110,63 @@ def calc_pot_atoms_list(path, absorber = None, radius = 8, absorber_list = []):
         if absorber is None:
             raise ValueError("Please specify the absorber element.")
         
-        absorber_species = Element(absorber)
-        absorber_list = np.where(np.array(structure.species) == absorber_species)[0]
     
-    for i in absorber_list:
-        pot = pymatgen.io.feff.inputs.Potential(structure, int(i))
-        central_element = Element(pot.absorbing_atom)
-        ipotrow = [[0, central_element.Z, central_element.symbol, -1, -1, 1, 0]]
-        for el, amt in pot.struct.composition.items():
-            ipot = pot.pot_dict[el.symbol]
-            ipotrow.append([ipot, el.Z, el.symbol, -1, -1, amt, 0])
-              
-        cluster = np.array(pymatgen.io.feff.inputs.Atoms(structure, int(i), radius).get_lines())
-        # sort by distance
-        cluster = cluster[np.argsort(cluster[:, 5].astype(float))]
-        
-        # obtain unique potential
-        unique_potential = np.unique(cluster[:, 3])
-        map_potential = {unique_potential[i]: str(i) for i in range(len(unique_potential))}
-        
-        #pot index
-        pot_index=list(np.array(ipotrow)[:,0]) 
-        if len(map_potential)!=len(ipotrow):
-            miss_pot=set(pot_index).difference(list(map_potential.keys()))
-            raise ValueError(f"The radius is too short to include all potentials, please choose a larger radius(missing potential {miss_pot}).")
-        # replace the potential label
-        #cluster[:, 3] = [map_potential[str(i)] for i in cluster[:, 3]]
-        
-        # pot = []
-        # for i in map_potential.keys():
-        #     pot.append([map_potential[i], *ipotrow[int(i)][1:]])
-        
-        pot_atoms_list.append({"potential": tabulate(ipotrow, tablefmt="plain"), "atoms": tabulate(cluster, tablefmt="plain")})
+    for ii in range(len(absorber_list)):
+            clusters=np.array(pymatgen.io.feff.inputs.Atoms(structure, int(absorber_list[ii]), cluster_size).get_lines())
+            clusters = clusters[np.argsort(clusters[:, 5].astype(float))]
+            cluster_list,ele_list=cluster_to_numpy(clusters)
+            neighbor_dict=neighbor_list(structure,absorber_list[ii],ipot_dist,cluster_size)
+            
+            elements=structure.elements
+            num_ele_total=len(elements)
+            species=structure.species
+            central_element = species[absorber_list[ii]]
+            ipotrow = [[0,central_element.Z,central_element.symbol,-1,-1,1,0]]
+            pot_num=1
+            # pot_dict=dict()
+            num_atom=0
+            for i in range(num_ele_total):
+                num_ele_shell=0
+                ele1=np.where(np.array(ele_list)==elements[i])[0]
+                ele1=np.delete(ele1,np.where(ele1==0))
+                num_ele=len(np.where(np.array(ele_list)==elements[i])[0])-1#number of one kind of element
+                atom_list=[]
+                for k in range(len(neighbor_dict[elements[i]])):
+                    ipotrow.append([pot_num,elements[i].Z,elements[i].symbol,-1,-1,len(neighbor_dict[elements[i]][k]),0])
+                    for j in range(len(neighbor_dict[elements[i]][k])):
+                        clusters[neighbor_dict[elements[i]][k][j]][3]=str(pot_num)
+                        atom_list.append(neighbor_dict[elements[i]][k][j])
+                    # pot_dict[neighbor_dict[elements[i]][k][j]]=pot_num
+                    num_ele_shell+=len(neighbor_dict[elements[i]][k])
+                    pot_num+=1
+                num_atom+=num_ele_shell
+                residual=[item for item in range(len(ele1)) if item not in atom_list]
+                if num_ele-num_ele_shell>0:
+                    ipotrow.append([pot_num,elements[i].Z,elements[i].symbol,-1,-1,num_ele-num_ele_shell,0])
+                    for j in range(len(residual)):
+                        clusters[num_ele_shell+j-1][3]=str(pot_num)
+                        # pot_dict[num_atom+j]=pot_num
+                    pot_num+=1
+            unique_potential=np.unique(clusters[:,3])
+            map_potential = {unique_potential[i]: str(i) for i in range(len(unique_potential))}
+            pot_index=list(np.array(ipotrow)[:,0]) 
+            if len(map_potential)!=len(ipotrow):
+                    miss_pot=set(pot_index).difference(list(map_potential.keys()))
+                    raise ValueError(f"The radius is too short to include all potentials, please choose a larger radius(missing potential {miss_pot}).")
+            pot_atoms_list.append({"potential": tabulate(ipotrow, tablefmt="plain"), "atoms": tabulate(cluster, tablefmt="plain")})
         
     return pot_atoms_list
+    
+def cluster_to_numpy(clusters):
+    cluster_list=[]
+    ele=[]
+    for cluster in clusters:
+        cluster_list.append([np.float32(cluster[0]),np.float32(cluster[1]),np.float32(cluster[2])])
+        ele.append(Element(cluster[4]))
+    return np.array(cluster_list),ele
+
+
+
 
 def equ_sites(CA:str,labels,natoms,positions,cutoff,randomness=4):
     """
