@@ -187,6 +187,10 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 
 Kaifeng Zheng - kaifeng.zheng@stonybrook.edu
 
+## Co-contributor
+[@Mehmet Topsakal](https://github.com/MehmetTopsakal)
+[@Ryuichi Shimogawa](https://github.com/Ameyanagi)
+
 Project Link: [https://github.com/kaifengZheng/FEFF_package.git](https://github.com/kaifengZheng/FEFF_package.git)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
