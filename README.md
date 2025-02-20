@@ -49,7 +49,7 @@ The functionality of the package:
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-## Packages
+## Dependencies
 This section should list any major libraries and softwares used to bootstrap my project. 
 <br><ins>Spectra calculators:<ins>
 * FEFF https://feff.phys.washington.edu/<br>
