@@ -44,7 +44,7 @@ The functionality of the package:
 * allow coordinates as the input file
 * can use SCF to tune calculation(now only for FEFF) parameters
 * flexable modes for running the calculation
-* Only support linux system(parallel mode needs mpi support)
+* test only on linux system(parallel mode needs intel mpirun support)
 * `toolbox` provides the average method
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
