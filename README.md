@@ -32,7 +32,7 @@
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
 ## About The Project
-This package can be used to run multiple FEFF calculations in parallel, decreasing the amount of calculation time when one wants to run huge FEFF calculations. For instance, one may be interested in particle-averaged spectra for different shape particles. If those particles are irregular, most likely, every atom is inequivalent. Therefore, we need to calculate thousands or hundred thousand spectra. Using either the sequential or mpi version of FEFF is impossible to run sequentially and finish the jobs in a reasonable time(3000 147-atom particles require 300 more days to finish it！Using this package will decrease the calculation time dramatically and will finish them within one week(use 3x96 core on cluster). <br>
+This package enables parallel execution of multiple FEFF calculations, significantly reducing the total computation time—especially when dealing with large-scale simulations. For example, when calculating particle-averaged spectra for nanoparticles of various shapes, many of which are irregular, nearly all atoms may be inequivalent. In such cases, tens or even hundreds of thousands of spectra may be required. Running these calculations sequentially or using the standard MPI version of FEFF would be impractical; for instance, computing spectra for 3,000 particles with 147 atoms each could take over 300 days. In contrast, using this package with a computing cluster (e.g., 3 nodes with 96 cores each) can reduce the runtime to under one week. <br>
 
 Why I design this package:
 * Decrease the calculation time ⏲️
